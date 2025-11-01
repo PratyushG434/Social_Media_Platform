@@ -11,4 +11,5 @@ router.route('/')
 router.post('/:postId/like', protect, likePost);
 router.post('/:postId/comment', protect, addComment);
 
+//use cloudinary / multer to store videos and photos
 export default router;
