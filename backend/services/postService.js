@@ -52,7 +52,6 @@ exports.getPostById = async (postId) => {
 
 
 exports.updatePost = async (postId, userId, updateData) => {
-    // verify the user owns the post?
     const postOwnerResult = await db.query(
         `SELECT user_id FROM posts WHERE post_id = $1;`,
         [postId]
@@ -63,7 +62,7 @@ exports.updatePost = async (postId, userId, updateData) => {
         return null;
     }
     if (post.user_id !== userId) {
-        throw new Error('Not authorized to update this post.'); // Authorization check
+        throw new Error('Not authorized to update this post.');
     }
 
     const updateFields = [];
@@ -100,7 +99,6 @@ exports.updatePost = async (postId, userId, updateData) => {
 };
 
 exports.deletePost = async (postId, userId) => {
-    // verify the user owns the post?
     const postOwnerResult = await db.query(
         `SELECT user_id FROM posts WHERE post_id = $1;`,
         [postId]
