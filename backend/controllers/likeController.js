@@ -1,4 +1,4 @@
-const likeService = require('../services/likeService'); // Import the like service
+const likeService = require('../services/likeService');
 
 exports.toggleLike = async (req, res) => {
     const userId = req.user.user_id;

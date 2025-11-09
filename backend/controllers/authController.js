@@ -1,4 +1,4 @@
-const authService = require('../services/authService'); // Import the auth service
+const authService = require('../services/authService');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();

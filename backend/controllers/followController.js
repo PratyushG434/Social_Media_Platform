@@ -1,4 +1,4 @@
-const followService = require('../services/followService'); // Import the follow service
+const followService = require('../services/followService');
 
 
 exports.toggleFollow = async (req, res) => {

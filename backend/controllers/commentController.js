@@ -1,4 +1,4 @@
-const commentService = require('../services/commentService'); // Import the comment service
+const commentService = require('../services/commentService');
 
 exports.addComment = async (req, res) => {
     const userId = req.user.user_id;

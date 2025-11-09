@@ -1,4 +1,4 @@
-const storyService = require('../services/storyService'); // Import the story service
+const storyService = require('../services/storyService');
 
 exports.addStory = async (req, res) => {
     const userId = req.user.user_id;

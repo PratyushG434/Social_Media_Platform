@@ -1,4 +1,4 @@
-const userService = require('../services/userService'); // Import the user service
+const userService = require('../services/userService'); 
 
 exports.getMe = async (req, res) => {
     try {
