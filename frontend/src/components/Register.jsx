@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
 
-export default function Register() {
+export default function Register({ Navigate }) {
   const [formData, setFormData] = useState({
     email: "",
     displayName: "",
@@ -14,7 +13,6 @@ export default function Register() {
   })
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
-  const navigate = useNavigate()
 
   const handleChange = (e) => {
     setFormData({
@@ -23,9 +21,8 @@ export default function Register() {
     })
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    setError("")
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
@@ -37,40 +34,11 @@ export default function Register() {
       return
     }
 
-    try {
-      const res = await fetch("http://localhost:3000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          name: formData.displayName,
-          username: formData.username,
-          password: formData.password,
-          dob: formData.dob,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || !data.success) {
-        setError(data.message || "Registration failed. Please try again.")
-        return
-      }
-
-      // Save JWT and user details in localStorage
-      localStorage.setItem("token", data.data.token)
-      localStorage.setItem("user", JSON.stringify(data.data.user))
-
-      setSuccess(true)
-      setTimeout(() => {
-        navigate("/dashboard")
-      }, 2000)
-    } catch (err) {
-      console.error("Register error:", err)
-      setError("Unable to connect to the server.")
-    }
+    // Mock registration success
+    setSuccess(true)
+    setTimeout(() => {
+      Navigate("login")
+    }, 2000)
   }
 
   if (success) {
@@ -80,7 +48,7 @@ export default function Register() {
           <div className="bg-card rounded-lg shadow-lg p-8 text-center">
             <div className="text-6xl mb-4">✅</div>
             <h2 className="text-2xl font-bold text-primary mb-2">Account Created!</h2>
-            <p className="text-muted-foreground">Redirecting to dashboard...</p>
+            <p className="text-muted-foreground">Redirecting to login...</p>
           </div>
         </div>
       </div>
@@ -92,7 +60,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">Join StreamSocial</h1>
+            <h1 className="text-3xl font-bold text-primary mb-2">Join SocialApp</h1>
             <p className="text-muted-foreground">Create your account to get started</p>
           </div>
 
@@ -205,7 +173,7 @@ export default function Register() {
           <div className="mt-6 text-center">
             <div className="text-muted-foreground text-sm">
               Already have an account?{" "}
-              <button onClick={() => navigate("/login")} className="text-primary hover:underline">
+              <button onClick={() => Navigate("login")} className="text-primary hover:underline">
                 Log In
               </button>
             </div>

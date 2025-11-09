@@ -1,42 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
 
-export default function Login() {
+export default function Login({ onLogin, Navigate }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
-  const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    setError("")
-
-    try {
-      const res = await fetch("http://localhost:3000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || !data.success) {
-        setError(data.message || "Invalid credentials.")
-        return
-      }
-
-      // Save JWT and user details in localStorage
-      localStorage.setItem("token", data.data.token)
-      localStorage.setItem("user", JSON.stringify(data.data.user))
-
-      navigate("/dashboard")
-    } catch (err) {
-      console.error("Login error:", err)
-      setError("Unable to connect to the server.")
+    const success = onLogin(email, password)
+    if (!success) {
+      setError("Invalid credentials. Try john@example.com / password")
     }
   }
 
@@ -45,7 +20,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">StreamSocial</h1>
+            <h1 className="text-3xl font-bold text-primary mb-2">SocialApp</h1>
             <p className="text-muted-foreground">Connect with friends and share moments</p>
           </div>
 
@@ -101,7 +76,7 @@ export default function Login() {
             <button className="text-primary hover:underline text-sm">Forgot Password?</button>
             <div className="text-muted-foreground text-sm">
               Don't have an account?{" "}
-              <button onClick={() => navigate("/register")} className="text-primary hover:underline">
+              <button onClick={() =>Navigate("register")} className="text-primary hover:underline">
                 Sign Up
               </button>
             </div>
