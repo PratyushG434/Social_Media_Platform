@@ -4,9 +4,10 @@ const postController = require("../controllers/postController.js");
 const commentController = require("../controllers/commentController.js");
 const likeController = require("../controllers/likeController.js");
 const { protect } = require("../middleware/authMiddleware.js");
+const upload = require("../middleware/upload.js")
 
 
-router.post("/", protect, postController.createPost);
+router.post("/" , protect , upload.single('content'), postController.createPost); // add protect here 
 router.get("/:id", postController.getPostById);
 router.get("/", postController.getPosts);
 router.patch("/:id", protect, postController.updatePost);

@@ -1,4 +1,5 @@
 const userService = require('../services/userService'); 
+const cloudinary = require('../db/cloudinary')
 
 exports.getMe = async (req, res) => {
     try {
@@ -52,41 +53,65 @@ exports.getUserProfile = async (req, res) => {
 
 exports.updateMyProfile = async (req, res) => {
     const authenticatedUserId = req.user.user_id;
-    const { userId: targetUserId } = req.params; // User ID from URL (should match authenticatedUserId)
+    const { userId: targetUserId } = req.params;
 
+    // ✅ Ensure user updates only their own profile
     if (parseInt(targetUserId) !== authenticatedUserId) {
-        return res.status(403).json({ message: 'Not authorized to update this user\'s profile.' });
+        return res.status(403).json({ message: "Not authorized to update this user's profile." });
     }
 
-    const { display_name, bio, profile_pic_url, dob, gender } = req.body;
-
-    const updateData = { display_name, bio, profile_pic_url, dob, gender };
-
     try {
+        // Extract optional text fields
+        const { display_name, bio, dob, gender } = req.body;
+        const updateData = {};
+
+        if (display_name) updateData.display_name = display_name;
+        if (bio) updateData.bio = bio;
+        if (dob) updateData.dob = dob;
+        if (gender) updateData.gender = gender;
+
+        // ✅ Handle profile picture upload if present
+        if (req.file) {
+            const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'profile_pics',
+                resource_type: 'image'
+            });
+            updateData.profile_pic_url = uploadResult.secure_url;
+        }
+
+        // ✅ If no data provided
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: "No fields provided for update." });
+        }
+
+        // ✅ Perform the update
         const updatedUser = await userService.updateUserProfile(
-            parseInt(targetUserId),
+            authenticatedUserId,
             authenticatedUserId,
             updateData
         );
 
         if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found.' });
+            return res.status(404).json({ message: "User not found." });
         }
 
         res.status(200).json({
-            message: 'Profile updated successfully!',
+            message: "Profile updated successfully!",
             user: updatedUser
         });
 
     } catch (error) {
-        console.error('Error updating profile:', error);
-        if (error.message === 'Not authorized to update this user\'s profile.') {
+        console.error("Error updating profile:", error);
+
+        if (error.message === "Not authorized to update this user's profile.") {
             return res.status(403).json({ message: error.message });
         }
-        if (error.message === 'No valid fields provided for profile update.') {
+
+        if (error.message === "No valid fields provided for profile update.") {
             return res.status(400).json({ message: error.message });
         }
-        res.status(500).json({ message: 'Server error updating profile.' });
+
+        res.status(500).json({ message: "Server error updating profile." });
     }
 };
 

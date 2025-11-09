@@ -1,29 +1,44 @@
 const postService = require('../services/postService');
-
+const cloudinary = require('../db/cloudinary')
 
 exports.createPost = async (req, res) => {
     const userId = req.user.user_id;
-    const { content, media_url, content_type } = req.body;
-
-    if (!content && !media_url) {
-        return res.status(400).json({ message: 'Post must contain either content or a media URL.' });
+    const { content, content_type } = req.body;
+  
+    // File (image/video) comes from frontend form-data field 'file'
+    const file = req.file;
+  
+    if (!content && !file) {
+      return res.status(400).json({ message: 'Post must contain either text or media.' });
     }
+  
     if (!content_type || !['text', 'image', 'video'].includes(content_type)) {
-        return res.status(400).json({ message: 'Invalid or missing content_type. Must be "text", "image", or "video".' });
+      return res.status(400).json({ message: 'Invalid content_type (must be text, image, or video).' });
     }
-
+  
     try {
-        const newPost = await postService.createPost(userId, content, media_url, content_type);
-        res.status(201).json({
-            message: 'Post created successfully!',
-            post: newPost
+      let media_url = null;
+  
+      // Upload media to Cloudinary if provided
+      if (file) {
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+          folder: 'posts',
+          resource_type: content_type === 'video' ? 'video' : 'image',
         });
-
+        media_url = uploadResult.secure_url;
+      }
+  
+      const newPost = await postService.createPost(userId, content, media_url, content_type);
+      res.status(201).json({
+        message: 'Post created successfully!',
+        post: newPost,
+      });
+  
     } catch (error) {
-        console.error('Error creating post:', error);
-        res.status(500).json({ message: 'Server error creating post.' });
+      console.error('Error creating post:', error);
+      res.status(500).json({ message: 'Server error creating post.' });
     }
-};
+  };
 
 
 exports.getPosts = async (req, res) => {

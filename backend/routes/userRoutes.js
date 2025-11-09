@@ -3,11 +3,12 @@ const router = express.Router();
 const userController = require("../controllers/userController.js");
 const followController = require("../controllers/followController.js");
 const { protect } = require("../middleware/authMiddleware.js");
+const upload = require('../middleware/upload.js')
 
 router.get("/me", protect, userController.getMe);
 
 router.get('/:userId', userController.getUserProfile);
-router.patch('/:userId', protect, userController.updateMyProfile);
+router.patch('/:userId', protect, upload.single('profile_pic'), userController.updateMyProfile);
 router.patch('/:userId/password', protect, userController.changeMyPassword);
 
 
