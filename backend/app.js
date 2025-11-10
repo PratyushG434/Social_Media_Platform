@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const db = require('./db/db');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/authRoutes.js');
 const userRoutes = require('./routes/userRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
@@ -21,7 +22,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-
+app.use(cookieParser());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
