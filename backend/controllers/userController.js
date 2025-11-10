@@ -169,7 +169,7 @@ exports.changeMyPassword = async (req, res) => {
 };
 
 
-export const checkAuth = (req, res) => {
+exports.checkAuth = async(req, res) => {
   try {
     res.status(200).json(req.user);
   } catch (error) {
