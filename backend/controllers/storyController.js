@@ -1,32 +1,51 @@
-const storyService = require('../services/storyService');
+const cloudinary = require('../db/cloudinary');
+const storyService = require('../services/storyService'); // ensure imported
 
 exports.addStory = async (req, res) => {
-    const userId = req.user.user_id;
-    const { content, media_url, content_type } = req.body;
+  const userId = req.user.user_id;
+  const { content, content_type } = req.body;
+  const file = req.file;
 
-    // Validation
-    if (!content_type || !['text', 'image', 'video'].includes(content_type)) {
-        return res.status(400).json({ message: 'Invalid or missing content_type. Must be "text", "image", or "video".' });
-    }
-    if (content_type === 'text' && (!content || content.trim() === '')) {
-        return res.status(400).json({ message: 'Text stories require content.' });
-    }
-    if ((content_type === 'image' || content_type === 'video') && (!media_url || media_url.trim() === '')) {
-        return res.status(400).json({ message: 'Image/Video stories require a media_url.' });
+  // Validate content_type
+  if (!content_type || !['text', 'image', 'video'].includes(content_type)) {
+    return res.status(400).json({ message: 'Invalid or missing content_type. Must be "text", "image", or "video".' });
+  }
+
+  // Validation for text or media
+  if (content_type === 'text' && (!content || content.trim() === '')) {
+    return res.status(400).json({ message: 'Text stories require content.' });
+  }
+
+  if ((content_type === 'image' || content_type === 'video') && !file) {
+    return res.status(400).json({ message: 'Image/Video stories require a file upload.' });
+  }
+
+  try {
+    let media_url = null;
+
+    // Upload media to Cloudinary if file exists
+    if (file) {
+      const uploadResult = await cloudinary.uploader.upload(file.path, {
+        folder: 'stories',
+        resource_type: content_type === 'video' ? 'video' : 'image',
+      });
+      media_url = uploadResult.secure_url;
     }
 
-    try {
-        const newStory = await storyService.addStory(userId, content, media_url, content_type);
-        res.status(201).json({
-            message: 'Story created successfully!',
-            story: newStory
-        });
+    // Save story entry
+    const newStory = await storyService.addStory(userId, content, media_url, content_type);
 
-    } catch (error) {
-        console.error('Error adding story:', error);
-        res.status(500).json({ message: 'Server error adding story.' });
-    }
+    res.status(201).json({
+      message: 'Story created successfully!',
+      story: newStory,
+    });
+
+  } catch (error) {
+    console.error('Error adding story:', error);
+    res.status(500).json({ message: 'Server error adding story.' });
+  }
 };
+
 
 
 exports.getStoriesFeed = async (req, res) => {

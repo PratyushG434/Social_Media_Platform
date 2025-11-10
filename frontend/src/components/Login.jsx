@@ -30,7 +30,7 @@ import { NotificationProvider , useNotifications } from "./Notification-system";
 
      addNotification({
       type: "success",
-      title: "Welcome to Social_app!",
+      title: "Welcome to streamsocial!",
       message: "Successfully signed in. Redirecting to dashboard...",
     });
   

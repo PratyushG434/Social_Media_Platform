@@ -1,7 +1,8 @@
 // config.js
 
 import { getuid } from "process";
-import { getUserProfile } from "../../../backend/controllers/userController";
+// import { getUserProfile } from "../../../backend/controllers/userController";
+// import { getAllPosts } from "../../../backend/services/postService";
 
 
 // Notification Messages
@@ -41,7 +42,7 @@ export const SERVICE_URLS = {
   createPost : { url : '/posts' , method : 'POST'},
   getPosts : { url : '/posts' , method : 'GET'},
   getUserProfile : { url :'/profile' , method : 'GET'},
-
+  getAllPosts :{ url : '/posts' , method : 'GET'},
   
  sendMessage: ({ id, text , image }) => ({
   url: `/send/${id}`,

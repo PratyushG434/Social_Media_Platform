@@ -3,67 +3,91 @@
 import { useState } from "react"
 import PostCard from "./PostCard"
 import Stories from "./Stories"
-
-export default function Feed({ currentUser, onNavigate }) {
-  const [searchQuery, setSearchQuery] = useState("")
+import { useEffect } from "react"
+import API from "../service/api"
+import { useAuthStore } from "../store/useAuthStore"
+import { useNavigate } from "react-router-dom"
+export default function Feed() {
+ const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState("all")
+  const [posts, setPosts] = useState([])     
+  const {authUser} = useAuthStore();
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    const getPosts = async () => {
+      try {
+        const response = await API.getAllPosts()
 
-  const [posts] = useState([
-    {
-      id: 1,
-      user: {
-        id: 2,
-        username: "sarah_wilson",
-        displayName: "Sarah Wilson",
-        profilePic: "/woman-profile.png",
-      },
-      content: "Beautiful sunset at the beach today! 🌅",
-      mediaUrl: "/sunset-beach-tranquil.png",
-      contentType: "image",
-      timestamp: "2 hours ago",
-      likes: 124,
-      comments: 18,
-      shares: 5,
-      isLiked: false,
-      isSaved: false,
-    },
-    {
-      id: 2,
-      user: {
-        id: 3,
-        username: "mike_photo",
-        displayName: "Mike Photography",
-        profilePic: "/man-photographer.png",
-      },
-      content: "New camera gear arrived! Time for some amazing shots 📸",
-      mediaUrl: "/assorted-camera-gear.png",
-      contentType: "image",
-      timestamp: "4 hours ago",
-      likes: 89,
-      comments: 12,
-      shares: 3,
-      isLiked: true,
-      isSaved: false,
-    },
-    {
-      id: 3,
-      user: {
-        id: 4,
-        username: "foodie_anna",
-        displayName: "Anna Foodie",
-        profilePic: "/woman-chef-preparing-food.png",
-      },
-      content: "Homemade pasta with fresh basil from my garden 🍝",
-      mediaUrl: "/delicious-pasta-dish.png",
-      contentType: "image",
-      timestamp: "6 hours ago",
-      likes: 156,
-      comments: 23,
-      shares: 8,
-      isLiked: false,
-      isSaved: true,
-    },
-  ])
+        if (!response?.isSuccess) throw new Error("Failed to fetch posts")
+
+        setPosts(response.data.posts || [])
+      } catch (err) {
+        console.log("Feed Fetch Error:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    getPosts()
+  }, [])
+
+  // const [posts] = useState([
+  //   {
+  //     id: 1,
+  //     user: {
+  //       id: 2,
+  //       username: "sarah_wilson",
+  //       displayName: "Sarah Wilson",
+  //       profilePic: "/woman-profile.png",
+  //     },
+  //     content: "Beautiful sunset at the beach today! 🌅",
+  //     mediaUrl: "/sunset-beach-tranquil.png",
+  //     contentType: "image",
+  //     timestamp: "2 hours ago",
+  //     likes: 124,
+  //     comments: 18,
+  //     shares: 5,
+  //     isLiked: false,
+  //     isSaved: false,
+  //   },
+  //   {
+  //     id: 2,
+  //     user: {
+  //       id: 3,
+  //       username: "mike_photo",
+  //       displayName: "Mike Photography",
+  //       profilePic: "/man-photographer.png",
+  //     },
+  //     content: "New camera gear arrived! Time for some amazing shots 📸",
+  //     mediaUrl: "/assorted-camera-gear.png",
+  //     contentType: "image",
+  //     timestamp: "4 hours ago",
+  //     likes: 89,
+  //     comments: 12,
+  //     shares: 3,
+  //     isLiked: true,
+  //     isSaved: false,
+  //   },
+  //   {
+  //     id: 3,
+  //     user: {
+  //       id: 4,
+  //       username: "foodie_anna",
+  //       displayName: "Anna Foodie",
+  //       profilePic: "/woman-chef-preparing-food.png",
+  //     },
+  //     content: "Homemade pasta with fresh basil from my garden 🍝",
+  //     mediaUrl: "/delicious-pasta-dish.png",
+  //     contentType: "image",
+  //     timestamp: "6 hours ago",
+  //     likes: 156,
+  //     comments: 23,
+  //     shares: 8,
+  //     isLiked: false,
+  //     isSaved: true,
+  //   },
+  // ])
 
   const suggestedUsers = [
     {
@@ -84,14 +108,14 @@ export default function Feed({ currentUser, onNavigate }) {
     },
   ]
 
-  const filteredPosts = posts.filter((post) => {
-    const matchesSearch =
-      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.user.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFilter =
-      filterType === "all" || (filterType === "liked" && post.isLiked) || (filterType === "saved" && post.isSaved)
-    return matchesSearch && matchesFilter
-  })
+  // const filteredPosts = posts.filter((post) => {
+  //   const matchesSearch =
+  //     post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     post.user.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+  //   const matchesFilter =
+  //     filterType === "all" || (filterType === "liked" && post.isLiked) || (filterType === "saved" && post.isSaved)
+  //   return matchesSearch && matchesFilter
+  // })
 
   return (
     <div className="max-w-2xl mx-auto pb-6">
@@ -102,7 +126,7 @@ export default function Feed({ currentUser, onNavigate }) {
             StreamSocial
           </h1>
           <button
-            onClick={() => onNavigate("settings")}
+            onClick={() => ("settings")}
             className="p-2 hover:bg-primary/10 rounded-full transition-all duration-300 hover:scale-110"
           >
             <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,11 +175,10 @@ export default function Feed({ currentUser, onNavigate }) {
             <button
               key={filter.id}
               onClick={() => setFilterType(filter.id)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                filterType === filter.id
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${filterType === filter.id
                   ? "bg-primary text-white shadow-lg shadow-primary/30"
                   : "bg-white/60 text-gray-700 hover:bg-white/80"
-              }`}
+                }`}
             >
               <span>{filter.icon}</span>
               <span>{filter.label}</span>
@@ -165,7 +188,7 @@ export default function Feed({ currentUser, onNavigate }) {
       </div>
 
       {/* Stories */}
-      <Stories onClick={onNavigate} />
+      <Stories />
 
       {/* Suggested Users */}
       <div className="bg-gradient-to-br from-white to-primary/5 m-4 rounded-2xl p-5 border border-primary/10 shadow-sm">
@@ -209,7 +232,7 @@ export default function Feed({ currentUser, onNavigate }) {
       <div className="space-y-5 px-4">
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} currentUser={currentUser} onNavigate={onNavigate} />
+            <PostCard key={post.id} post={post}  />
           ))
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">
@@ -218,6 +241,17 @@ export default function Feed({ currentUser, onNavigate }) {
             <p className="text-gray-500">Try adjusting your search or filters</p>
           </div>
         )}
+        {/* {filteredPosts.length > 0 ? (
+          filteredPosts.map((post) => (
+            <PostCard key={post.id} post={post}  />
+          ))
+        ) : (
+          <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">No posts found</h3>
+            <p className="text-gray-500">Try adjusting your search or filters</p>
+          </div>
+        )} */}
       </div>
     </div>
   )

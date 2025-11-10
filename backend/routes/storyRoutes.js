@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const storyController = require('../controllers/storyController');
 const { protect } = require('../middleware/authMiddleware');
+const upload = require('../middleware/upload');
 
 
 // protected routes
-router.post('/', protect, storyController.addStory);
+router.post('/', protect, upload.single('content'), storyController.addStory);
 router.get('/feed', protect, storyController.getStoriesFeed);
 
 router.post('/:storyId/likes', protect, storyController.toggleStoryLike);
