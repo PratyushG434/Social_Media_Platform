@@ -112,7 +112,7 @@ import { NotificationProvider , useNotifications } from "./Notification-system";
             <button className="text-primary hover:underline text-sm">Forgot Password?</button>
             <div className="text-muted-foreground text-sm">
               Don't have an account?{" "}
-              <button onClick={() =>navigate("register")} className="text-primary hover:underline">
+              <button onClick={() =>navigate("/register")} className="text-primary hover:underline">
                 Sign Up
               </button>
             </div>
