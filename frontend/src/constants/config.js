@@ -35,6 +35,10 @@ export const SERVICE_URLS = {
   checkAuth: {url : '/check' , method : 'GET'},
   logout: {url : '/logout' , method : 'POST'} ,
   getUsersForSidebar : {url : '/chatlist' , method : 'GET'},
+  createPost : { url : '/posts' , method : 'POST'},
+  getPosts : { url : '/posts' , method : 'GET'},
+
+  
   
  sendMessage: ({ id, text , image }) => ({
   url: `/send/${id}`,

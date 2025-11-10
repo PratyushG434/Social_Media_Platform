@@ -2,18 +2,19 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 exports.protect = (req, res, next) => {
-    let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-        try {
-            token = req.headers.authorization.split(" ")[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = decoded;
-            next();
-        } catch (error) {
-            res.status(401).json({ message: "Not authorized, token failed" });
-        }
-    }
+    const token = req.cookies?.token;
+    console.log(token);
+    console.log("hello");
     if (!token) {
-        res.status(401).json({ message: "Not authorized, token failed" });
+        return res.status(401).json({ message: 'Not authorized, no.' });
     }
-}
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        console.error('JWT verification error:', error.message);
+        return res.status(401).json({ message: 'Not authorized, token failed.' });
+    }
+};

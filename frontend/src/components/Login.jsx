@@ -30,7 +30,7 @@ import { NotificationProvider , useNotifications } from "./Notification-system";
 
      addNotification({
       type: "success",
-      title: "Welcome to MediCall!",
+      title: "Welcome to Social_app!",
       message: "Successfully signed in. Redirecting to dashboard...",
     });
   
@@ -38,7 +38,7 @@ import { NotificationProvider , useNotifications } from "./Notification-system";
     setTimeout(() => {
       navigate("/dashboard");
     }, 1500);
-  } catch ( error ) {
+  } catch ( err ) {
     
     addNotification({
       type: "error",
@@ -112,7 +112,7 @@ import { NotificationProvider , useNotifications } from "./Notification-system";
             <button className="text-primary hover:underline text-sm">Forgot Password?</button>
             <div className="text-muted-foreground text-sm">
               Don't have an account?{" "}
-              <button onClick={() =>navigate("register")} className="text-primary hover:underline">
+              <button onClick={() =>navigate("/register")} className="text-primary hover:underline">
                 Sign Up
               </button>
             </div>

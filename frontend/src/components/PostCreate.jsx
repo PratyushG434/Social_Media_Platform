@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useNotifications , NotificationProvider} from "./Notification-system";
+import { SERVICE_URLS, API_NOTIFICATION_MESSAGES } from "../constants/config";
+import API from "../service/api";
 
 export default function PostCreate({ currentUser, onNavigate }) {
   const [content, setContent] = useState("")
@@ -8,6 +11,7 @@ export default function PostCreate({ currentUser, onNavigate }) {
   const [mediaPreview, setMediaPreview] = useState(null)
   const [isPosting, setIsPosting] = useState(false)
 
+  const { addNotification } = useNotifications();
   const handleMediaChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -24,17 +28,43 @@ export default function PostCreate({ currentUser, onNavigate }) {
     e.preventDefault()
     if (!content.trim() && !mediaFile) return
 
-    setIsPosting(true)
+    try {
+      setIsPosting(true)
 
-    // Mock posting delay
-    setTimeout(() => {
-      setIsPosting(false)
+      // create FormData (required for file uploads)
+      const formData = new FormData()
+      if (mediaFile) formData.append("content", mediaFile)
+       
+      formData.append("content_type", mediaFile ? "image" : "text")
+
+      // call the API
+      const response = await API.createPost(formData)
+
+      if (!response?.isSuccess) throw new Error("Failed to create post")
+
+      addNotification?.({
+        type: "success",
+        title: "Post Created",
+        message: "Your post was successfully uploaded!"
+      })
+
+      // reset UI
       setContent("")
       setMediaFile(null)
       setMediaPreview(null)
-      onNavigate("dashboard")
-    }, 2000)
+      onNavigate?.("dashboard")
+
+    } catch (err) {
+      addNotification?.({
+        type: "error",
+        title: "Post Failed",
+        message: err?.message || "Something went wrong"
+      })
+    } finally {
+      setIsPosting(false)
+    }
   }
+
 
   const removeMedia = () => {
     setMediaFile(null)
