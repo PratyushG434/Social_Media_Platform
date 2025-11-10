@@ -16,4 +16,8 @@ router.post("/:userId/follow", protect, followController.toggleFollow);
 router.get("/:userId/following", protect, followController.getFollowing);
 router.get("/:userId/followers", protect, followController.getFollowers);
 
+
+router.get("/check", protect, userController.checkAuth);
+
 module.exports = router;
+
