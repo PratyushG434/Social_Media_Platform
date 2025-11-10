@@ -39,32 +39,47 @@ exports.registerUser = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
+
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required.' });
     }
+
     try {
         const user = await authService.findUserByEmail(email);
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials.' });
         }
+
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid credentials.' });
         }
+
+        // ✅ Generate JWT
         const token = jwt.sign(
             { user_id: user.user_id, username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: '10h' }
         );
+
+        // ✅ Send token in a secure cookie
+        res.cookie('token', token, {
+            httpOnly: true,          // Prevents JS access (mitigates XSS)
+            secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
+            sameSite: 'Strict',      // Helps prevent CSRF
+            maxAge: 60 * 60 * 1000,  // 1 hour
+        });
+
+        // ✅ You can still send minimal data back if needed
         res.status(200).json({
             message: 'Logged in successfully!',
-            token,
             user: {
                 user_id: user.user_id,
                 username: user.username,
                 email: user.email
             }
         });
+
     } catch (error) {
         console.error('Error during user login:', error);
         res.status(500).json({ message: 'Server error during login.' });
