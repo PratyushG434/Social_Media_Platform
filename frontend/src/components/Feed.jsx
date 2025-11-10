@@ -230,8 +230,8 @@ export default function Feed() {
 
       {/* Posts Feed */}
       <div className="space-y-5 px-4">
-        {filteredPosts.length > 0 ? (
-          filteredPosts.map((post) => (
+        {posts.length > 0 ? (
+          posts.map((post) => (
             <PostCard key={post.id} post={post}  />
           ))
         ) : (

@@ -45,7 +45,7 @@ export default function Dashboard() {
       </main>
 
       <button
-        onClick={() => navigate("/post-create")}
+        onClick={() => navigate("/dashboard/post-create")}
         className="fixed bottom-6 right-6 w-14 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 z-50"
       >
         <span className="text-2xl">+</span>

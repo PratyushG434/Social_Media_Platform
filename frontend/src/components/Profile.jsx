@@ -14,7 +14,7 @@ export default function Profile({ userId, onNavigate }) {
       try {
         const response = await API.getUserProfile(userId)
         if (!response?.isSuccess) throw new Error("Failed to fetch user")
-
+        console.log(response.data.user)
         setUser(response.data.user)
         setUserPosts(response.data.user.posts || []) // when you add posts in backend
       } catch (err) {
