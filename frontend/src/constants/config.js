@@ -41,7 +41,7 @@ export const SERVICE_URLS = {
   getUsersForSidebar : {url : '/chatlist' , method : 'GET'},
   createPost : { url : '/posts' , method : 'POST'},
   getPosts : { url : '/posts' , method : 'GET'},
-  getUserProfile : { url :'/profile' , method : 'GET'},
+  getUserProfile : { url :'/users/me' , method : 'GET'},
   getAllPosts :{ url : '/posts' , method : 'GET'},
   
  sendMessage: ({ id, text , image }) => ({
