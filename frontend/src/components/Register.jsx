@@ -1,8 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
+import API from "../service/api";
+import { useNavigate } from "react-router-dom";
+import { useNotifications , NotificationProvider} from "./Notification-system";
+// TODO: adjust this import to match your auth store hook location
+import { useAuthStore } from "../store/useAuthStore";
 
-export default function Register({ Navigate }) {
+const  RegisterContent = () => {
   const [formData, setFormData] = useState({
     email: "",
     displayName: "",
@@ -10,36 +15,76 @@ export default function Register({ Navigate }) {
     password: "",
     confirmPassword: "",
     dob: "",
-  })
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
+  });
+
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const { login, isLoggingIn, authUser } = useAuthStore();
+  const { addNotification } = useNotifications();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    })
-  }
+    }));
+  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      return
+      setError("Passwords do not match");
+      return;
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
-      return
+      setError("Password must be at least 6 characters");
+      return;
     }
 
-    // Mock registration success
-    setSuccess(true)
-    setTimeout(() => {
-      Navigate("login")
-    }, 2000)
-  }
+    try {
+      const response = await API.registerUser({
+        email : formData.email,
+        username: formData.username,
+        password : formData.password,
+        dob : formData.dob,
+        display_name : formData.displayName
+      });
+      const mongoUser = response?.data?.user;
+
+      if (!mongoUser) {
+        throw new Error("Invalid signup response");
+      }
+
+      // send data to auth store (login the user)
+      await login(mongoUser);
+
+      // notify and navigate
+      addNotification({
+        type: "success",
+        title: "Signed Up",
+        message: "Account created successfully. Redirecting to Dashboard...",
+      });
+
+      setSuccess(true);
+
+      // short delay then navigate to dashboard
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1200);
+    } catch (err) {
+      const message = err?.message || "Registration failed";
+      setError(message);
+      addNotification({
+        type: "error",
+        title: "Registration Error",
+        message,
+      });
+    }
+  };
 
   if (success) {
     return (
@@ -48,11 +93,11 @@ export default function Register({ Navigate }) {
           <div className="bg-card rounded-lg shadow-lg p-8 text-center">
             <div className="text-6xl mb-4">✅</div>
             <h2 className="text-2xl font-bold text-primary mb-2">Account Created!</h2>
-            <p className="text-muted-foreground">Redirecting to login...</p>
+            <p className="text-muted-foreground">Redirecting to Dashboard...</p>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -173,7 +218,7 @@ export default function Register({ Navigate }) {
           <div className="mt-6 text-center">
             <div className="text-muted-foreground text-sm">
               Already have an account?{" "}
-              <button onClick={() => Navigate("login")} className="text-primary hover:underline">
+              <button onClick={() => navigate("/login")} className="text-primary hover:underline">
                 Log In
               </button>
             </div>
@@ -181,5 +226,13 @@ export default function Register({ Navigate }) {
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+export default function Register() {
+  return (
+    <NotificationProvider>
+      <RegisterContent />
+    </NotificationProvider>
+  );
 }

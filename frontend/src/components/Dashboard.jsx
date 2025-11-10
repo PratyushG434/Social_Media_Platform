@@ -14,18 +14,18 @@ import Videos from "./Videos"
 import Shorts from "./Shorts"
 import Explore from "./Explore"
 
-export default function Dashboard({ currentUser, onLogout }) {
+export default function Dashboard() {
   const navigate = useNavigate()
 
-  // ✅ Add this handler
-  const handleNavigate = (path) => {
-    navigate(path)
-  }
+  // // ✅ Add this handler
+  // const handleNavigate = (path) => {
+  //   navigate(path)
+  // }
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* ✅ Pass both props */}
-      <SideNavigation onLogout={onLogout} onNavigate={handleNavigate} />
+      {/* <SideNavigation onLogout={onLogout} onNavigate={handleNavigate} /> */}
 
       <main className="flex-1 ml-64">
         <Routes>

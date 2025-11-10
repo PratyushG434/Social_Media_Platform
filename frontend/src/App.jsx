@@ -1,80 +1,59 @@
 "use client"
 
-import { useState } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { useState  , useEffect} from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate, BrowserRouter } from "react-router-dom"
 import Login from "./components/Login"
 import Register from "./components/Register"
 import Dashboard from "./components/Dashboard"
-
+import {useAuthStore} from './store/useAuthStore'
+import { Loader } from 'lucide-react'
 function App() {
-  const [currentUser, setCurrentUser] = useState(null)
+  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
+  
+   console.log({ onlineUsers  } , " online user from app.jsx");
+  console.log( authUser);
+  
+    useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-  // Mock user data
-  const mockUsers = [
-    {
-      id: 1,
-      username: "john_doe",
-      email: "john@example.com",
-      displayName: "John Doe",
-      bio: "Love photography and travel ✈️",
-      profilePic: "/man-profile.png",
-      followers: 1234,
-      following: 567,
-      posts: [],
-    },
-  ]
-
-  const handleLogin = (email, password) => {
-    const user = mockUsers.find((u) => u.email === email)
-    if (user && password === "password") {
-      setCurrentUser(user)
-      return true
-    }
-    return false
-  }
-
-  const handleRegister = (userData) => {
-    const newUser = {
-      id: mockUsers.length + 1,
-      ...userData,
-      profilePic: "/man-profile.png",
-      followers: 0,
-      following: 0,
-      posts: [],
-    }
-    mockUsers.push(newUser)
-    setCurrentUser(newUser)
-    return true
-  }
-
-  const handleLogout = () => {
-    setCurrentUser(null)
-  }
+    // if (isCheckingAuth && !authUser)
+    // return (
+    //   <div className="flex items-center justify-center h-screen">
+    //     <Loader className="size-10 animate-spin" />
+    //   </div>
+    // );
+ 
+ 
 
   return (
+    <>
+   
     <Router>
       <Routes>
         <Route
           path="/login"
-          element={currentUser ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />}
+          element={authUser ? <Navigate to="/dashboard" /> : <Login  />}
         />
         <Route
           path="/register"
-          element={currentUser ? <Navigate to="/dashboard" replace /> : <Register onRegister={handleRegister} />}
+          element={authUser ? <Navigate to="/dashboard" /> : <Register  />}
         />
         <Route
           path="/dashboard/*"
           element={
-            currentUser ? (
-              <Dashboard currentUser={currentUser} onLogout={handleLogout} />
+            authUser ? (
+              <Dashboard  />
             ) : (
-              <Navigate to="/login" replace />
+              <Navigate to="/login" />
             )
           }
         />
-        <Route path="/" element={<Navigate to={currentUser ? "/dashboard" : "/login"} replace />} />
+        <Route path="/" element={<Navigate to={authUser ? "/dashboard" : "/login"} />} />
       </Routes>
     </Router>
+    
+    </>
   )
 }
 
