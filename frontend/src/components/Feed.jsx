@@ -5,10 +5,14 @@ import PostCard from "./PostCard"
 import Stories from "./Stories"
 import { useEffect } from "react"
 import API from "../service/api"
-export default function Feed({ currentUser, onNavigate }) {
-  const [searchQuery, setSearchQuery] = useState("")
+import { useAuthStore } from "../store/useAuthStore"
+import { useNavigate } from "react-router-dom"
+export default function Feed() {
+ const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState("all")
-  const [posts, setPosts] = useState([])   
+  const [posts, setPosts] = useState([])     
+  const {authUser} = useAuthStore();
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     const getPosts = async () => {
@@ -122,7 +126,7 @@ export default function Feed({ currentUser, onNavigate }) {
             StreamSocial
           </h1>
           <button
-            onClick={() => onNavigate("settings")}
+            onClick={() => ("settings")}
             className="p-2 hover:bg-primary/10 rounded-full transition-all duration-300 hover:scale-110"
           >
             <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,7 +188,7 @@ export default function Feed({ currentUser, onNavigate }) {
       </div>
 
       {/* Stories */}
-      <Stories onClick={onNavigate} />
+      <Stories />
 
       {/* Suggested Users */}
       <div className="bg-gradient-to-br from-white to-primary/5 m-4 rounded-2xl p-5 border border-primary/10 shadow-sm">
@@ -226,9 +230,9 @@ export default function Feed({ currentUser, onNavigate }) {
 
       {/* Posts Feed */}
       <div className="space-y-5 px-4">
-        {posts.length > 0 ? (
-          posts.map((post) => (
-            <PostCard key={post.id} post={post} currentUser={currentUser} onNavigate={onNavigate} />
+        {filteredPosts.length > 0 ? (
+          filteredPosts.map((post) => (
+            <PostCard key={post.id} post={post}  />
           ))
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">
@@ -239,7 +243,7 @@ export default function Feed({ currentUser, onNavigate }) {
         )}
         {/* {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} currentUser={currentUser} onNavigate={onNavigate} />
+            <PostCard key={post.id} post={post}  />
           ))
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">

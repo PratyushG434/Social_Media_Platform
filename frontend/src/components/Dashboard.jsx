@@ -16,8 +16,8 @@ import Explore from "./Explore"
 import { useAuthStore } from "../store/useAuthStore"
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { authUser, logout, onlineUsers } = useAuthStore();
-  const currentUser = authUser;
+  const { authUser , onlineUsers } = useAuthStore();
+ 
   // // ✅ Add this handler
   // const handleNavigate = (path) => {
   //   navigate(path)
@@ -26,26 +26,26 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* ✅ Pass both props */}
-      {/* <SideNavigation onLogout={onLogout} onNavigate={handleNavigate} /> */}
+      { <SideNavigation /> }
 
       <main className="flex-1 ml-64">
         <Routes>
-          <Route path="/" element={<Feed currentUser={currentUser} />} />
-          <Route path="/explore" element={<Explore currentUser={currentUser} />} />
-          <Route path="/videos" element={<Videos currentUser={currentUser} />} />
-          <Route path="/shorts" element={<Shorts currentUser={currentUser} />} />
-          <Route path="/profile" element={<Profile currentUser={currentUser} />} />
-          <Route path="/post-create" element={<PostCreate currentUser={currentUser} />} />
-          <Route path="/messages" element={<Messages currentUser={currentUser} />} />
-          <Route path="/notifications" element={<Notifications currentUser={currentUser} />} />
-          <Route path="/settings" element={<Settings currentUser={currentUser} />} />
-          <Route path="/story-viewer" element={<StoryViewer />} />
-          <Route path="/story-create" element={<StoryCreate currentUser={currentUser} />} />
+          <Route path="/" element={<Feed />} />
+          <Route path="explore" element={<Explore />} />
+          <Route path="videos" element={<Videos />} />
+          <Route path="shorts" element={<Shorts />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="post-create" element={<PostCreate />} />
+          <Route path="messages" element={<Messages />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="story-viewer" element={<StoryViewer />} />
+          <Route path="story-create" element={<StoryCreate />} />
         </Routes>
       </main>
 
       <button
-        onClick={() => navigate("/dashboard/post-create")}
+        onClick={() => navigate("/post-create")}
         className="fixed bottom-6 right-6 w-14 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 z-50"
       >
         <span className="text-2xl">+</span>

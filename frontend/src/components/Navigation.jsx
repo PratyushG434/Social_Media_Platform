@@ -1,8 +1,11 @@
 "use client"
+import { useNavigate } from "react-router-dom"
+import { useAuthStore } from "../store/useAuthStore";
+export default function Navigation({ currentPage, navigate, onLogout }) {
+  const navigate = useNavigate();
 
-export default function Navigation({ currentPage, onNavigate, onLogout }) {
   const navItems = [
-    { id: "/", label: "Home", icon: "🏠" },
+    { id: "/dashboard", label: "Home", icon: "🏠" },
     { id: "profile", label: "Profile", icon: "👤" },
     { id: "post-create", label: "Post", icon: "➕" },
     { id: "messages", label: "Messages", icon: "💬" },
@@ -15,7 +18,7 @@ export default function Navigation({ currentPage, onNavigate, onLogout }) {
         {navItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => onNavigate(item.id)}
+            onClick={() => navigate(item.id)}
             className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
               currentPage === item.id
                 ? "text-primary bg-primary/10"
