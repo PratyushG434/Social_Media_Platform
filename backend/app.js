@@ -51,6 +51,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/stories', storyRoutes);
 
+
+require('./utils/cleanUpStories.js');
+
 app.listen(PORT, () => {
     console.log(`\n======================================`);
     console.log(`Server is running on port: ${PORT}`);

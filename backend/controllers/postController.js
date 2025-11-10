@@ -17,7 +17,7 @@ exports.createPost = async (req, res) => {
     }
   
     try {
-      let media_url = null;
+      let media_url = null, public_id = null;
   
       // Upload media to Cloudinary if provided
       if (file) {
@@ -26,9 +26,10 @@ exports.createPost = async (req, res) => {
           resource_type: content_type === 'video' ? 'video' : 'image',
         });
         media_url = uploadResult.secure_url;
+        public_id = uploadResult.public_id;
       }
   
-      const newPost = await postService.createPost(userId, content, media_url, content_type);
+      const newPost = await postService.createPost(userId, content, media_url, content_type, public_id);
       res.status(201).json({
         message: 'Post created successfully!',
         post: newPost,
@@ -115,24 +116,35 @@ exports.updatePost = async (req, res) => {
     }
 };
 
-exports.deletePost = async (req, res) => {
-    const userId = req.user.user_id;
-    const { id: postId } = req.params;
-
+exports.deletePost = async (postId) => {
     try {
-        const deleted = await postService.deletePost(postId, userId);
+      // 1️⃣ Get Cloudinary public ID and content type
+      const result = await db.query(
+        `SELECT cloudinary_public_id, content_type FROM posts WHERE post_id = $1`,
+        [postId]
+      );
+  
+      const post = result.rows[0];
+      if (!post) return false;
+  
+      // 2️⃣ Delete post record from DB
+      await db.query(`DELETE FROM posts WHERE post_id = $1`, [postId]);
 
-        if (!deleted) {
-            return res.status(404).json({ message: 'Post not found.' });
-        }
-
-        res.status(200).json({ message: 'Post deleted successfully!' });
-
+      // 3️⃣ Delete media from Cloudinary (if it exists)
+      if (post.cloudinary_public_id) {
+        const resourceType =
+          post.content_type === 'video' ? 'video' : 'image';
+  
+        await cloudinary.uploader.destroy(
+          post.cloudinary_public_id,
+          { resource_type: resourceType }
+        );
+      }
+  
+  
+      return true;
     } catch (error) {
-        console.error('Error deleting post:', error);
-        if (error.message === 'Not authorized to delete this post.') {
-            return res.status(403).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Server error deleting post.' });
+      console.error('Error deleting post:', error);
+      throw error;
     }
-};
+  };

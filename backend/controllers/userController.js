@@ -104,6 +104,7 @@ exports.updateMyProfile = async (req, res) => {
                 resource_type: 'image'
             });
             updateData.profile_pic_url = uploadResult.secure_url;
+            updateData.public_id = uploadResult.public_id;
         }
 
         // ✅ If no data provided

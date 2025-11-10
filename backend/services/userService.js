@@ -42,6 +42,10 @@ exports.updateUserProfile = async (targetUserId, authenticatedUserId, updateData
         updateFields.push(`profile_pic_url = $${paramIndex++}`);
         queryParams.push(updateData.profile_pic_url);
     }
+    if (updateData.public_id !== undefined) {
+        updateFields.push(`cloudinary_public_id = $${paramIndex++}`);
+        queryParams.push(updateData.public_id);
+    }
     if (updateData.dob !== undefined) {
         updateFields.push(`dob = $${paramIndex++}`);
         queryParams.push(updateData.dob);

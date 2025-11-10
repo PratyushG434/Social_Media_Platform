@@ -5,12 +5,12 @@ const userExists = async (userId) => {
     return result.rows.length > 0;
 };
 
-exports.createPost = async (userId, content, media_url, content_type) => {
+exports.createPost = async (userId, content, media_url, content_type, public_id) => {
     const result = await db.query(
-        `INSERT INTO posts (user_id, content, media_url, content_type)
+        `INSERT INTO posts (user_id, content, media_url, content_type, cloudinary_public_id)
          VALUES ($1, $2, $3, $4)
          RETURNING post_id, user_id, content, media_url, content_type, timestamp;`,
-        [userId, content || null, media_url || null, content_type]
+        [userId, content || null, media_url || null, content_type, public_id || null]
     );
     return result.rows[0];
 };
