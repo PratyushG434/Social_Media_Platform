@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 8000;
 
 
 
+app.use(express.json());
 
 const corsOptions = {
     origin: 'http://localhost:3001', // <--- IMPORTANT: Replace with your actual frontend URL if different
@@ -24,7 +25,6 @@ app.use(cors(corsOptions));
 
 app.use(cookieParser());
 
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 async function testDbConnection() {
