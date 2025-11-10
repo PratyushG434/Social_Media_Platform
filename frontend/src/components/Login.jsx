@@ -1,18 +1,54 @@
 "use client"
 
 import { useState } from "react"
+import { useAuthStore } from "../store/useAuthStore";
+import API from "../service/api";
+import { useNavigate } from "react-router-dom";
+import { NotificationProvider , useNotifications } from "./Notification-system";
 
-export default function Login({ onLogin, Navigate }) {
+ const LoginContent = ()=>{
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
-
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  const { login, isLoggingIn , authUser } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+   const { addNotification } = useNotifications();
+  const handleSubmit = async(e) => {
     e.preventDefault()
-    const success = onLogin(email, password)
-    if (!success) {
-      setError("Invalid credentials. Try john@example.com / password")
-    }
+    
+    try {
+    
+      const response = await API.loginUser({
+      email: email,
+      password : password,
+    });
+      const mongoUser = response.data.user;
+     console.log(mongoUser , ' user from loginpage')
+    //  send data to authstore
+     await login(mongoUser);  
+
+     addNotification({
+      type: "success",
+      title: "Welcome to MediCall!",
+      message: "Successfully signed in. Redirecting to dashboard...",
+    });
+  
+      setIsLoading(false);
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 1500);
+  } catch ( error ) {
+    
+    addNotification({
+      type: "error",
+      title: "Authentication Failed",
+      message: err.message,
+    });
+  
+   } 
+    
+
   }
 
   return (
@@ -64,25 +100,33 @@ export default function Login({ onLogin, Navigate }) {
               Login
             </button>
 
-            <button
+            {/* <button
               type="button"
               className="w-full bg-secondary text-secondary-foreground py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors"
             >
               Login with Google
-            </button>
+            </button> */}
           </form>
 
           <div className="mt-6 text-center space-y-2">
             <button className="text-primary hover:underline text-sm">Forgot Password?</button>
             <div className="text-muted-foreground text-sm">
               Don't have an account?{" "}
-              <button onClick={() =>Navigate("register")} className="text-primary hover:underline">
+              <button onClick={() =>navigate("register")} className="text-primary hover:underline">
                 Sign Up
               </button>
             </div>
           </div>
+
         </div>
       </div>
     </div>
   )
+}
+export default function Login() {
+  return (
+    <NotificationProvider>
+      <LoginContent />
+    </NotificationProvider>
+  );
 }
