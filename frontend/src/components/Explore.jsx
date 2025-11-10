@@ -1,10 +1,14 @@
 "use client"
 
 import { useState } from "react"
-
-export default function Explore({ currentUser, onNavigate }) {
+import { useAuthStore } from "../store/useAuthStore"
+import { useNavigate } from "react-router-dom";
+export default function Explore({  }) {
   const [activeTab, setActiveTab] = useState("trending")
   const [searchQuery, setSearchQuery] = useState("")
+    const { authUser } = useAuthStore();
+    const navigate = useNavigate();
+   
 
   // Mock trending content
   const trendingPosts = [
