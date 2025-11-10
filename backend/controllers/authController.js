@@ -55,14 +55,12 @@ exports.loginUser = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials.' });
         }
 
-        // ✅ Generate JWT
         const token = jwt.sign(
             { user_id: user.user_id, username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: '10h' }
         );
 
-        // ✅ Send token in a secure cookie
         res.cookie('token', token, {
             httpOnly: true,          // Prevents JS access (mitigates XSS)
             secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
@@ -70,7 +68,6 @@ exports.loginUser = async (req, res) => {
             maxAge: 60 * 60 * 1000,  // 1 hour
         });
 
-        // ✅ You can still send minimal data back if needed
         res.status(200).json({
             message: 'Logged in successfully!',
             user: {
