@@ -13,10 +13,11 @@ import StoryCreate from "./StoryCreate"
 import Videos from "./Videos"
 import Shorts from "./Shorts"
 import Explore from "./Explore"
-
+import { useAuthStore } from "../store/useAuthStore"
 export default function Dashboard() {
   const navigate = useNavigate()
-
+  const { authUser, logout, onlineUsers } = useAuthStore();
+  const currentUser = authUser;
   // // ✅ Add this handler
   // const handleNavigate = (path) => {
   //   navigate(path)

@@ -6,6 +6,7 @@ import Login from "./components/Login"
 import Register from "./components/Register"
 import Dashboard from "./components/Dashboard"
 import {useAuthStore} from './store/useAuthStore'
+
 import { Loader } from 'lucide-react'
 function App() {
   const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
@@ -49,6 +50,7 @@ function App() {
             )
           }
         />
+       
         <Route path="/" element={<Navigate to={authUser ? "/dashboard" : "/login"} />} />
       </Routes>
     </Router>
