@@ -8,14 +8,19 @@ exports.getMe = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const user = await userService.getUserById(userId);
-
+        const followers = await getFollowers(id);
+        const following = await getFollowing(id);
+        const posts = await getPostsByUserId(id);
         if (!user) {
             return res.status(404).json({ message: 'User not found.' });
         }
 
         res.status(200).json({
             message: 'User profile fetched successfully.',
-            user: user
+            user: user,
+            posts : posts,
+            followers: followers,
+            following: following
         });
 
     } catch (error) {
