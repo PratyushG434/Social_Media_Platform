@@ -16,7 +16,7 @@ export default function Profile({ userId, onNavigate }) {
         if (!response?.isSuccess) throw new Error("Failed to fetch user")
         console.log(response.data.user)
         setUser(response.data.user)
-        setUserPosts(response.data.user.posts || []) // when you add posts in backend
+        setUserPosts(response.data.posts || []) // when you add posts in backend
       } catch (err) {
         console.log("Profile fetch error =>", err)
       } finally {

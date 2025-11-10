@@ -1,6 +1,6 @@
 const userService = require('../services/userService'); 
 const {getFollowing , getFollowers} = require('../services/followService');
-const getPostsByUserId = require('../services/postService');
+const {getPostsByUserId}= require('../services/postService');
 // const getFollowers = require('../services/followService');
 const cloudinary = require('../db/cloudinary');
 
@@ -8,9 +8,9 @@ exports.getMe = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const user = await userService.getUserById(userId);
-        const followers = await getFollowers(id);
-        const following = await getFollowing(id);
-        const posts = await getPostsByUserId(id);
+        const followers = await getFollowers(userId);
+        const following = await getFollowing(userId);
+        const posts = await getPostsByUserId(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found.' });
         }
