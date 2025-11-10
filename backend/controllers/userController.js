@@ -1,5 +1,6 @@
 const userService = require('../services/userService'); 
-const cloudinary = require('../db/cloudinary')
+const {getFollowing , getFollowers} = require('../services/followService');
+const cloudinary = require('../db/cloudinary');
 
 exports.getMe = async (req, res) => {
     try {
@@ -31,17 +32,33 @@ exports.getUserProfile = async (req, res) => {
     const { userId } = req.params; // Get the user ID from URL params
 
     try {
-        const user = await userService.getUserById(parseInt(userId));
+        const id = parseInt(userId);
+        const user = await userService.getUserById(id);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Optionally, remove sensitive data if fetching someone else's profile
-        // For now, we're returning public fields already
+        // Fetch followers and following
+        const followers = await userService.getFollowers(id);
+        const following = await userService.getFollowing(id);
+
         res.status(200).json({
             message: 'User profile fetched successfully.',
-            user: user
+            user: {
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email,
+                display_name: user.display_name,
+                bio: user.bio,
+                profile_pic_url: user.profile_pic_url,
+                dob: user.dob,
+                gender: user.gender,
+                join_date: user.join_date,
+                acc_status: user.acc_status,
+                followers: followers,   // list of follower users
+                following: following    // list of following users
+            }
         });
 
     } catch (error) {
@@ -49,6 +66,7 @@ exports.getUserProfile = async (req, res) => {
         res.status(500).json({ message: 'Server error fetching user profile.' });
     }
 };
+
 
 
 exports.updateMyProfile = async (req, res) => {
