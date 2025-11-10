@@ -1,5 +1,7 @@
 const userService = require('../services/userService'); 
 const {getFollowing , getFollowers} = require('../services/followService');
+const getPostsByUserId = require('../services/postService');
+// const getFollowers = require('../services/followService');
 const cloudinary = require('../db/cloudinary');
 
 exports.getMe = async (req, res) => {
@@ -40,8 +42,9 @@ exports.getUserProfile = async (req, res) => {
         }
 
         // Fetch followers and following
-        const followers = await userService.getFollowers(id);
-        const following = await userService.getFollowing(id);
+        const followers = await getFollowers(id);
+        const following = await getFollowing(id);
+        const posts = await getPostsByUserId(id);
 
         res.status(200).json({
             message: 'User profile fetched successfully.',
@@ -57,7 +60,8 @@ exports.getUserProfile = async (req, res) => {
                 join_date: user.join_date,
                 acc_status: user.acc_status,
                 followers: followers,   // list of follower users
-                following: following    // list of following users
+                following: following,    // list of following users
+                posts : posts           // all the user posts
             }
         });
 
