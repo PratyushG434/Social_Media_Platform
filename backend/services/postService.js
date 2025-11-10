@@ -1,5 +1,10 @@
 const db = require('../db/db');
 
+const userExists = async (userId) => {
+    const result = await db.query('SELECT 1 FROM users WHERE user_id = $1;', [userId]);
+    return result.rows.length > 0;
+};
+
 exports.createPost = async (userId, content, media_url, content_type) => {
     const result = await db.query(
         `INSERT INTO posts (user_id, content, media_url, content_type)
@@ -22,37 +27,15 @@ exports.getAllPosts = async () => {
             p.user_id,
             u.username,
             u.display_name,
-            u.profile_pic_url
+            u.profile_pic_url,
+            COUNT(DISTINCT l.like_id)::int AS likes_count,     -- Count distinct likes
+            COUNT(DISTINCT c.comment_id)::int AS comments_count -- Count distinct comments
          FROM posts p
          JOIN users u ON p.user_id = u.user_id
+         LEFT JOIN likes l ON p.post_id = l.post_id        -- LEFT JOIN to include posts with no likes
+         LEFT JOIN comments c ON p.post_id = c.post_id     -- LEFT JOIN to include posts with no comments
+         GROUP BY p.post_id, u.user_id                      -- Group by post and user details
          ORDER BY p.timestamp DESC;`
-    );
-    return result.rows;
-};
-
-
-
-exports.getPostsByUserId = async (userId) => {
-    if (!(await userExists(userId))) {
-        throw new Error('User not found.');
-    }
-
-    const result = await db.query(
-        `SELECT
-            p.post_id,
-            p.content,
-            p.media_url,
-            p.content_type,
-            p.timestamp,
-            p.user_id,
-            u.username,
-            u.display_name,
-            u.profile_pic_url
-         FROM posts p
-         JOIN users u ON p.user_id = u.user_id
-         WHERE p.user_id = $1
-         ORDER BY p.timestamp DESC;`, 
-        [userId]
     );
     return result.rows;
 };
@@ -70,13 +53,50 @@ exports.getPostById = async (postId) => {
             p.user_id,
             u.username,
             u.display_name,
-            u.profile_pic_url
+            u.profile_pic_url,
+            COUNT(DISTINCT l.like_id)::int AS likes_count,
+            COUNT(DISTINCT c.comment_id)::int AS comments_count
          FROM posts p
          JOIN users u ON p.user_id = u.user_id
-         WHERE p.post_id = $1;`,
+         LEFT JOIN likes l ON p.post_id = l.post_id
+         LEFT JOIN comments c ON p.post_id = c.post_id
+         WHERE p.post_id = $1
+         GROUP BY p.post_id, u.user_id
+         ORDER BY p.timestamp DESC;`,
         [postId]
     );
     return result.rows[0] || null;
+};
+
+
+exports.getPostsByUserId = async (userId) => {
+    if (!(await userExists(userId))) {
+        throw new Error('User not found.');
+    }
+
+    const result = await db.query(
+        `SELECT
+            p.post_id,
+            p.content,
+            p.media_url,
+            p.content_type,
+            p.timestamp,
+            p.user_id,
+            u.username,
+            u.display_name,
+            u.profile_pic_url,
+            COUNT(DISTINCT l.like_id)::int AS likes_count,
+            COUNT(DISTINCT c.comment_id)::int AS comments_count
+         FROM posts p
+         JOIN users u ON p.user_id = u.user_id
+         LEFT JOIN likes l ON p.post_id = l.post_id
+         LEFT JOIN comments c ON p.post_id = c.post_id
+         WHERE p.user_id = $1
+         GROUP BY p.post_id, u.user_id
+         ORDER BY p.timestamp DESC;`,
+        [userId]
+    );
+    return result.rows;
 };
 
 
