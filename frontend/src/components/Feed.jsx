@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import PostCard from "./PostCard"
-import Stories from "./stories"
+import Stories from "./Stories"
 
 export default function Feed({ currentUser, onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("")
