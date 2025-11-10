@@ -33,8 +33,8 @@ export default function PostCreate({ currentUser, onNavigate }) {
 
       // create FormData (required for file uploads)
       const formData = new FormData()
-      if (mediaFile) formData.append("Content", mediaFile)
-      formData.append("content", content)
+      if (mediaFile) formData.append("content", mediaFile)
+       
       formData.append("content_type", mediaFile ? "image" : "text")
 
       // call the API

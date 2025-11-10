@@ -2,13 +2,11 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 exports.protect = (req, res, next) => {
-    let token;
-    if (req.cookies && req.cookies.jwt) {
-        token = req.cookies.jwt;
-    }
-
+    const token = req.cookies?.token;
+    console.log(token);
+    console.log("hello");
     if (!token) {
-        return res.status(401).json({ message: 'Not authorized, no token.' });
+        return res.status(401).json({ message: 'Not authorized, no.' });
     }
 
     try {
