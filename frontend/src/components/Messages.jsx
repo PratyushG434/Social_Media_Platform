@@ -1,10 +1,14 @@
 "use client"
 
 import { useState } from "react"
-
-export default function Messages({ currentUser, onNavigate }) {
+import { useNavigate } from "react-router-dom"
+import { useAuthStore } from "../store/useAuthStore"
+export default function Messages() {
   const [selectedChat, setSelectedChat] = useState(null)
   const [newMessage, setNewMessage] = useState("")
+  const {authUser} = useAuthStore();
+  const navigate = useNavigate() ;
+
 
   // Mock conversations with enhanced data
   const [conversations] = useState([

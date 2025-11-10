@@ -21,7 +21,7 @@ export const useAuthStore = create((set, get) => ({
       set({ authUser : res.data });
 
 
-      get().connectSocket();
+      // get().connectSocket();
 
     } catch (error) {
       console.log("Error in checkAuth:", error);
@@ -39,7 +39,7 @@ export const useAuthStore = create((set, get) => ({
        set({ authUser: data }); // this saves the logged-in user
     console.log(get().authUser, ' from useAuthStore after setting');
 
-    get().connectSocket(); // if you implement sockets later
+    // get().connectSocket(); // if you implement sockets later
     } catch (error) {
      console.log('error in set authuser in useauthsotre')
     } finally {
@@ -53,31 +53,31 @@ export const useAuthStore = create((set, get) => ({
       set({ authUser: null });
 
    
-      get().disconnectSocket();
+      // get().disconnectSocket();
     } catch (error) {
    
     }
   },
 
  
-  connectSocket: () => {
-    const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+//   connectSocket: () => {
+//     const { authUser } = get();
+//     if (!authUser || get().socket?.connected) return;
 
-    const socket = io(BASE_URL, {
-      query: {
-        userId: authUser._id,
-      },
-    });
-    socket.connect();
+//     const socket = io(BASE_URL, {
+//       query: {
+//         userId: authUser._id,
+//       },
+//     });
+//     socket.connect();
 
-    set({ socket: socket });
+//     set({ socket: socket });
 
-    socket.on("getOnlineUsers", (userIds) => {
-      set({ onlineUsers: userIds });
-    });
-  },
-  disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
-  },
+//     socket.on("getOnlineUsers", (userIds) => {
+//       set({ onlineUsers: userIds });
+//     });
+//   },
+//   disconnectSocket: () => {
+//     if (get().socket?.connected) get().socket.disconnect();
+//   },
 }));
