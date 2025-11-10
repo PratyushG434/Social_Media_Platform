@@ -1,5 +1,8 @@
 // config.js
 
+import { getuid } from "process";
+import { getUserProfile } from "../../../backend/controllers/userController";
+
 
 // Notification Messages
 export const API_NOTIFICATION_MESSAGES = {
@@ -37,8 +40,8 @@ export const SERVICE_URLS = {
   getUsersForSidebar : {url : '/chatlist' , method : 'GET'},
   createPost : { url : '/posts' , method : 'POST'},
   getPosts : { url : '/posts' , method : 'GET'},
+  getUserProfile : { url :'/profile' , method : 'GET'},
 
-  
   
  sendMessage: ({ id, text , image }) => ({
   url: `/send/${id}`,

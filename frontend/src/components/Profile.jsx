@@ -1,60 +1,38 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import API from "../service/api"
 
-export default function Profile({ currentUser, onNavigate }) {
+export default function Profile({ userId, onNavigate }) {
+  const [user, setUser] = useState(null)
+  const [userPosts, setUserPosts] = useState([])
+  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("posts")
-  const [isFollowing, setIsFollowing] = useState(false)
 
-  // Mock user posts
-  const [userPosts] = useState([
-    {
-      id: 1,
-      mediaUrl: "/man-photographer.png",
-      likes: 45,
-      comments: 12,
-    },
-    {
-      id: 2,
-      mediaUrl: "/nature-photography-collection.png",
-      likes: 67,
-      comments: 8,
-    },
-    {
-      id: 3,
-      mediaUrl: "/nature-photography-collection.png",
-      likes: 89,
-      comments: 15,
-    },
-    {
-      id: 4,
-      mediaUrl: "/nature-photography-collection.png",
-      likes: 23,
-      comments: 5,
-    },
-    {
-      id: 5,
-      mediaUrl: "/sunset-beach-tranquil.png",
-      likes: 56,
-      comments: 9,
-    },
-    {
-      id: 6,
-      mediaUrl: "/sunset-beach-tranquil.png",
-      likes: 78,
-      comments: 18,
-    },
-  ])
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await API.getUserProfile(userId)
+        if (!response?.isSuccess) throw new Error("Failed to fetch user")
 
-  // Mock story highlights
-  const [highlights] = useState([
-    { id: 1, title: "Travel", thumbnail: "/sunset-beach-tranquil.png" },
-    { id: 2, title: "Food", thumbnail: "/nature-photography-collection.png" },
-    { id: 3, title: "Work", thumbnail: "/man-photographer.png" },
-  ])
+        setUser(response.data.user)
+        setUserPosts(response.data.user.posts || []) // when you add posts in backend
+      } catch (err) {
+        console.log("Profile fetch error =>", err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing)
+    fetchUser()
+  }, [userId])
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 text-center text-muted-foreground">
+        Loading profile...
+      </div>
+    )
   }
 
   return (
@@ -68,7 +46,9 @@ export default function Profile({ currentUser, onNavigate }) {
           >
             <span className="text-xl">←</span>
           </button>
-          <h1 className="text-xl font-semibold text-card-foreground">@{currentUser?.username}</h1>
+
+          <h1 className="text-xl font-semibold text-card-foreground">@{user.username}</h1>
+
           <button
             onClick={() => onNavigate("settings")}
             className="text-muted-foreground hover:text-card-foreground transition-colors"
@@ -82,13 +62,14 @@ export default function Profile({ currentUser, onNavigate }) {
       <div className="p-4">
         <div className="flex items-start space-x-4 mb-6">
           <img
-            src={currentUser?.profilePic || "/placeholder.svg?height=80&width=80&query=user+profile"}
-            alt={currentUser?.displayName}
+            src={user.profile_pic_url || "/placeholder.svg"}
+            alt={user.display_name}
             className="w-20 h-20 rounded-full object-cover"
           />
+
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-card-foreground">{currentUser?.displayName}</h2>
-            <p className="text-muted-foreground mb-3">{currentUser?.bio}</p>
+            <h2 className="text-xl font-bold text-card-foreground">{user.display_name}</h2>
+            <p className="text-muted-foreground mb-3">{user.bio || "No bio yet."}</p>
 
             {/* Stats */}
             <div className="flex space-x-6 mb-4">
@@ -96,17 +77,18 @@ export default function Profile({ currentUser, onNavigate }) {
                 <p className="font-bold text-card-foreground">{userPosts.length}</p>
                 <p className="text-sm text-muted-foreground">Posts</p>
               </div>
+
               <button className="text-center">
-                <p className="font-bold text-card-foreground">{currentUser?.followers || 0}</p>
+                <p className="font-bold text-card-foreground">{user.followers?.length || 0}</p>
                 <p className="text-sm text-muted-foreground">Followers</p>
               </button>
+
               <button className="text-center">
-                <p className="font-bold text-card-foreground">{currentUser?.following || 0}</p>
+                <p className="font-bold text-card-foreground">{user.following?.length || 0}</p>
                 <p className="text-sm text-muted-foreground">Following</p>
               </button>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex space-x-2">
               <button
                 onClick={() => onNavigate("settings")}
@@ -121,24 +103,6 @@ export default function Profile({ currentUser, onNavigate }) {
           </div>
         </div>
 
-        {/* Story Highlights */}
-        <div className="mb-6">
-          <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
-            {highlights.map((highlight) => (
-              <div key={highlight.id} className="flex-shrink-0 text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-secondary p-0.5 mb-2">
-                  <img
-                    src={highlight.thumbnail || "/placeholder.svg"}
-                    alt={highlight.title}
-                    className="w-full h-full rounded-full object-cover bg-background p-0.5"
-                  />
-                </div>
-                <p className="text-xs text-card-foreground">{highlight.title}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Tabs */}
         <div className="border-b border-border mb-4">
           <div className="flex">
@@ -150,9 +114,9 @@ export default function Profile({ currentUser, onNavigate }) {
                   : "text-muted-foreground hover:text-card-foreground"
               }`}
             >
-              <span className="text-lg mr-2">📱</span>
-              Posts
+              <span className="text-lg mr-2">📱</span> Posts
             </button>
+
             <button
               onClick={() => setActiveTab("tagged")}
               className={`flex-1 py-3 text-center font-medium transition-colors ${
@@ -161,8 +125,7 @@ export default function Profile({ currentUser, onNavigate }) {
                   : "text-muted-foreground hover:text-card-foreground"
               }`}
             >
-              <span className="text-lg mr-2">🏷️</span>
-              Tagged
+              <span className="text-lg mr-2">🏷️</span> Tagged
             </button>
           </div>
         </div>
@@ -171,22 +134,18 @@ export default function Profile({ currentUser, onNavigate }) {
         {activeTab === "posts" && (
           <div className="grid grid-cols-3 gap-1">
             {userPosts.map((post) => (
-              <div key={post.id} className="relative aspect-square group cursor-pointer">
-                <img src={post.mediaUrl || "/placeholder.svg"} alt="Post" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <div className="flex items-center space-x-4 text-white">
-                    <div className="flex items-center space-x-1">
-                      <span>❤️</span>
-                      <span className="text-sm">{post.likes}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span>💬</span>
-                      <span className="text-sm">{post.comments}</span>
-                    </div>
-                  </div>
-                </div>
+              <div key={post.post_id} className="relative aspect-square group cursor-pointer">
+                <img
+                  src={post.media_url || "/placeholder.svg"}
+                  alt="Post"
+                  className="w-full h-full object-cover"
+                />
               </div>
             ))}
+
+            {userPosts.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">No posts yet.</p>
+            )}
           </div>
         )}
 
