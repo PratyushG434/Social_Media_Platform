@@ -30,6 +30,35 @@ exports.getAllPosts = async () => {
     return result.rows;
 };
 
+
+
+exports.getPostsByUserId = async (userId) => {
+    if (!(await userExists(userId))) {
+        throw new Error('User not found.');
+    }
+
+    const result = await db.query(
+        `SELECT
+            p.post_id,
+            p.content,
+            p.media_url,
+            p.content_type,
+            p.timestamp,
+            p.user_id,
+            u.username,
+            u.display_name,
+            u.profile_pic_url
+         FROM posts p
+         JOIN users u ON p.user_id = u.user_id
+         WHERE p.user_id = $1
+         ORDER BY p.timestamp DESC;`, 
+        [userId]
+    );
+    return result.rows;
+};
+
+
+
 exports.getPostById = async (postId) => {
     const result = await db.query(
         `SELECT
