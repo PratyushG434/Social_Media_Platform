@@ -72,7 +72,7 @@ export default function StoryCreate({ currentUser, onNavigate }) {
       setMediaPreview(null)
 
       // Navigate back
-      onNavigate?.("dashboard")
+      navigate("/dashboard")
     } catch (err) {
       console.error("Story upload failed:", err)
       addNotification?.({
@@ -103,7 +103,7 @@ export default function StoryCreate({ currentUser, onNavigate }) {
     <div className="fixed inset-0 bg-black z-50">
       {/* Header */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-        <button onClick={() => navigate("dashboard")} className="text-white hover:text-white/70 transition-colors">
+        <button onClick={() => navigate("/dashboard")} className="text-white hover:text-white/70 transition-colors">
           <span className="text-xl">←</span>
         </button>
         <h1 className="text-white font-semibold">Create Story</h1>

@@ -14,8 +14,9 @@ export default function StoryViewer() {
   const [showReactions, setShowReactions] = useState(false)
   const location = useLocation()
 
-  const { userIds = []} = location.state || {}
 
+  const { userIds = []} = location.state || {}
+  const   navigate = useNavigate()
   // ✅ Fetch stories for each userId
   useEffect(() => {
     const fetchStories = async () => {
@@ -91,7 +92,7 @@ export default function StoryViewer() {
       setCurrentStoryIndex(0)
       setProgress(0)
     } else {
-      onNavigate("dashboard")
+      navigate("/dashboard")
     }
   }
 
@@ -138,7 +139,7 @@ export default function StoryViewer() {
           <div className="text-6xl mb-4">📱</div>
           <p>No stories available</p>
           <button
-            onClick={() => onNavigate("dashboard")}
+            onClick={() => navigate("/dashboard")}
             className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg"
           >
             Back to Feed
@@ -177,7 +178,7 @@ export default function StoryViewer() {
             <p className="text-white/70 text-xs">{currentStory.timestamp}</p>
           </div>
         </div>
-        <button onClick={() => onNavigate("dashboard")} className="text-white hover:text-white/70 transition-colors">
+        <button onClick={() => navigate("/dashboard")} className="text-white hover:text-white/70 transition-colors">
           <span className="text-2xl">×</span>
         </button>
       </div>

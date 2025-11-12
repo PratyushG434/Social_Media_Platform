@@ -124,7 +124,7 @@ for (const [key, value] of Object.entries(SERVICE_URLS)) {
       if (axiosConfig.method.toLowerCase() === 'get') {
         axiosConfig.params = config.params || {};
       } else {
-        axiosConfig.data = body;
+        axiosConfig.data = serviceConfig.body || body || {};
       }
   
       return axiosInstance(axiosConfig);

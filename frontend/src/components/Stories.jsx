@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react"
 import API from "../service/api"
 import { useNavigate } from "react-router-dom"
-
-export default function Stories({ currentUser }) {
+import { useAuthStore } from "../store/useAuthStore"
+export default function Stories() {
   const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const { authUser } = useAuthStore();
 
+  const currentUser = authUser
   useEffect(() => {
+    if (!authUser) return
     const fetchStories = async () => {
       try {
         const response = await API.getStoriesFeed()
@@ -17,36 +20,68 @@ export default function Stories({ currentUser }) {
 
         const storyData = response.data.stories || []
 
-        // ✅ Check if current user already has a story in feed
-        const userHasStory = storyData.some((s) => s.username === currentUser?.username)
-
-        // ✅ Map backend stories into existing structure (excluding current user’s own story)
-        const formattedStories = storyData
-          .filter((s) => s.username !== currentUser?.username) // remove your own story to avoid duplication
-          .map((s) => ({
-            id: s.story_id,
-            user_id : s.user_id,
-            user: {
+        // ✅ Group all stories by username so each user has one bubble
+        const groupedStories = storyData.reduce((acc, s) => {
+          if (!acc[s.username]) {
+            acc[s.username] = {
+              user_id: s.user_id,
               username: s.username,
-              displayName: s.display_name || s.username,
-              profilePic: s.profile_pic_url,
-            },
-            hasStory: true,
-            isViewed: false,
-            isOwn: false,
-          }))
+              display_name: s.display_name || s.username,
+              profile_pic_url: s.profile_pic_url,
+              stories: [],
+            }
+          }
+          acc[s.username].stories.push({
+            id: s.story_id,
+            content: s.content,
+            mediaUrl: s.media_url,
+            contentType: s.content_type,
+            timestamp: s.timestamp,
+            expiresAt: s.expires_at,
+          })
+          return acc
+        }, {})
 
-        // ✅ Always insert "Your Story" bubble first
+        // ✅ Convert object to array
+        const groupedArray = Object.values(groupedStories)
+
+        // ✅ Filter out your own stories from feed
+        const othersStories = groupedArray.filter(
+          (u) => u.user_id !== currentUser?.user_id
+        )
+
+        // ✅ Determine if you already have a story
+        const userHasStory = groupedArray.some(
+          (u) => u.username === currentUser?.username
+        )
+
+        // ✅ Create your story bubble (always leftmost)
         const yourStory = {
-          id: 0,
+          id: authUser.user_id,
           user: {
             username: currentUser?.username || "your_story",
             displayName: "Your Story",
             profilePic: currentUser?.profilePic || "/add-story.jpg",
           },
           isOwn: true,
-          hasStory: userHasStory, // now correctly reflects backend
+          hasStory: userHasStory,
         }
+
+        // ✅ Map the grouped stories into the same UI-friendly structure
+        const formattedStories = othersStories.map((u) => ({
+          id: u.user_id,
+          user: {
+            username: u.username,
+            displayName: u.display_name,
+            profilePic: u.profile_pic_url,
+          },
+          hasStory: true,
+          isViewed: false,
+          isOwn: false,
+        }))
+        console.log("authUser:", authUser);
+        console.log("authUser.id:", authUser?.id);
+        console.log("authUser.user_id:", authUser?.user_id);
 
         setStories([yourStory, ...formattedStories])
       } catch (err) {
@@ -57,27 +92,26 @@ export default function Stories({ currentUser }) {
     }
 
     fetchStories()
-  }, [currentUser])
+  }, [authUser])
 
-  // ✅ Handles story clicks
+  // ✅ Handle click logic
   const handleStoryClick = (story, clickedPlus = false) => {
     if (story.isOwn) {
       if (clickedPlus) {
-        navigate("story-create") // always open create on + click
+        navigate("story-create") // always open create on +
       } else {
-        if (story.hasStory) {
-          navigate("story-viewer") // open your own story if exists
-        } else {
-          navigate("story-create") // otherwise create
-        }
+        if (story.hasStory) navigate("story-viewer", { state: { userIds: [story.id] } })
+        else navigate("story-create")
       }
     } else {
-      console.log(story.user_id)
-      navigate("story-viewer", { state: { userIds: [story.user_id] } })
+      navigate("story-viewer", { state: { userIds: [story.id] } })
     }
   }
 
+
+
   if (loading) {
+
     return (
       <div className="bg-card border-b border-border p-4 text-center text-muted-foreground">
         Loading stories...
@@ -92,31 +126,28 @@ export default function Stories({ currentUser }) {
           <div
             key={story.id}
             onClick={(e) => {
-              // Prevent + button click from triggering main bubble
-              if (!e.target.closest(".create-story-btn")) {
-                handleStoryClick(story)
-              }
+              if (!e.target.closest(".create-story-btn")) handleStoryClick(story)
             }}
             className="flex-shrink-0 cursor-pointer"
           >
             <div className="relative">
               <div
-                className={`w-16 h-16 rounded-full p-0.5 ${
-                  story.isOwn && !story.hasStory
-                    ? "bg-border"
-                    : story.hasStory && !story.isViewed
+                className={`w-16 h-16 rounded-full p-0.5 ${story.isOwn && !story.hasStory
+                  ? "bg-border"
+                  : story.hasStory && !story.isViewed
                     ? "bg-gradient-to-tr from-primary to-secondary"
                     : "bg-muted"
-                }`}
+                  }`}
               >
                 <img
                   src={story.user.profilePic || "/placeholder.svg"}
                   alt={story.user.displayName}
                   className="w-full h-full rounded-full object-cover bg-background p-0.5"
+                  onClick={() => handleStoryClick(story, story.isOwn)}
                 />
               </div>
 
-              {/* ✅ + Button for creating story (always clickable) */}
+              {/* ✅ Always show + for your story */}
               {story.isOwn && (
                 <div
                   onClick={(e) => {

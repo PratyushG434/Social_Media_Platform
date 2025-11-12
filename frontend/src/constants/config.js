@@ -45,13 +45,16 @@ export const SERVICE_URLS = {
   getUserProfile: { url: '/users/me', method: 'GET' },
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
-  getUserStories: { url: (userId) => `/stories/user/${userId}`, method: 'GET' },
+  getUserStories: (userId) => ({ 
+    url: `/stories/user/${userId}`, 
+    method: 'GET' 
+  }),
   toggleLike: (postId) => ({
     url: `/posts/${postId}/likes`,
     method: 'POST'
   }),
 
-  addComment: ({postId, content}) =>
+  addComment: ({ postId, content }) =>
   ({
     url: `posts/${postId}/comments`,
     method: 'POST',
