@@ -9,7 +9,7 @@ cron.schedule("0 0 * * *", async () => {
   try {
     // Step 1: Get expired stories
     const { rows: expiredStories } = await db.query(
-      `SELECT id, cloudinary_public_id FROM stories WHERE expires_at < NOW()`
+      `SELECT story_id, cloudinary_public_id FROM stories WHERE expires_at < NOW()`
     );
 
     if (expiredStories.length === 0) {
@@ -21,7 +21,7 @@ cron.schedule("0 0 * * *", async () => {
 
     // Step 2: Delete each expired story from Cloudinary and DB
     for (const story of expiredStories) {
-      const { id, cloudinary_public_id } = story;
+      const { story_id, cloudinary_public_id } = story;
 
       try {
         // Delete from Cloudinary
@@ -29,10 +29,10 @@ cron.schedule("0 0 * * *", async () => {
         console.log(`🗑️ Deleted Cloudinary media: ${cloudinary_public_id}`);
 
         // Delete from DB
-        await db.query(`DELETE FROM stories WHERE id = $1`, [id]);
-        console.log(`✅ Removed story with id: ${id}`);
+        await db.query(`DELETE FROM stories WHERE story_id = $1`, [story_id]);
+        console.log(`✅ Removed story with id: ${story_id}`);
       } catch (err) {
-        console.error(`❌ Error deleting story ${id}:`, err.message);
+        console.error(`❌ Error deleting story ${story_id}:`, err.message);
       }
     }
   } catch (err) {
