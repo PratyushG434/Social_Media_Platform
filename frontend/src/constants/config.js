@@ -46,9 +46,9 @@ export const SERVICE_URLS = {
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
 
-  getUserStories: (userId) => ({ 
-    url: `/stories/user/${userId}`, 
-    method: 'GET' 
+  getUserStories: (userId) => ({
+    url: `/stories/user/${userId}`,
+    method: 'GET'
   }),
   toggleLike: (postId) => ({
     url: `/posts/${postId}/likes`,
@@ -65,9 +65,18 @@ export const SERVICE_URLS = {
   ({
     url: `posts/${postId}/comments`,
     method: 'GET',
-   
+
+  }),
+  toggleStoryLike: ({ storyId }) => ({
+    url: `stories/${storyId}/likes`,
+    method: 'POST',
   }),
 
+  reactToStory: ({ storyId, reaction }) => ({
+    url: `stories/${storyId}/reactions`,
+    method: 'POST',
+    data: { reaction },
+  }),
   sendMessage: ({ id, text, image }) => ({
     url: `/send/${id}`,
     method: "POST",
