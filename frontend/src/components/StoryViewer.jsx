@@ -21,7 +21,7 @@ export default function StoryViewer() {
   useEffect(() => {
     const fetchStories = async () => {
       try {
-        console.log(userIds)
+   
         if (!userIds.length) return
           
 

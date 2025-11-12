@@ -45,6 +45,7 @@ export const SERVICE_URLS = {
   getUserProfile: { url: '/users/me', method: 'GET' },
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
+
   getUserStories: (userId) => ({ 
     url: `/stories/user/${userId}`, 
     method: 'GET' 
@@ -59,6 +60,12 @@ export const SERVICE_URLS = {
     url: `posts/${postId}/comments`,
     method: 'POST',
     data: { content },
+  }),
+  getComments: ({ postId }) =>
+  ({
+    url: `posts/${postId}/comments`,
+    method: 'GET',
+   
   }),
 
   sendMessage: ({ id, text, image }) => ({

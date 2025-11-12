@@ -79,9 +79,7 @@ export default function Stories() {
           isViewed: false,
           isOwn: false,
         }))
-        console.log("authUser:", authUser);
-        console.log("authUser.id:", authUser?.id);
-        console.log("authUser.user_id:", authUser?.user_id);
+      
 
         setStories([yourStory, ...formattedStories])
       } catch (err) {

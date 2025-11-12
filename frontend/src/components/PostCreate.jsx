@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useNotifications , NotificationProvider} from "./Notification-system";
-import { SERVICE_URLS, API_NOTIFICATION_MESSAGES } from "../constants/config";
+import { useNotifications } from "./Notification-system";
+
 import API from "../service/api";
 
 export default function PostCreate({ currentUser, onNavigate }) {
