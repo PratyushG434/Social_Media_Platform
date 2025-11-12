@@ -35,8 +35,8 @@ export const SERVICE_URLS = {
   contactUs: { url: '/contactUs', method: 'POST' },
   loginUser: { url: '/auth/login', method: 'POST' },
   registerUser: { url: '/auth/register', method: 'POST' },
-  updateProfile: { url: '/updateProfile', method: 'PUT' },
-  checkAuth: { url: '/check', method: 'GET' },
+
+  checkAuth: { url: '/users/check', method: 'GET' },
   logout: { url: '/logout', method: 'POST' },
   getUsersForSidebar: { url: '/chatlist', method: 'GET' },
   createPost: { url: '/posts', method: 'POST' },
@@ -60,38 +60,47 @@ export const SERVICE_URLS = {
     method: 'POST',
     data: { content },
   }),
-
-  sendMessage: ({ id, text, image }) => ({
-    url: `/send/${id}`,
-    method: "POST",
-    data: { text, image },
-  }),
-
-  getMessages: (meetingid) => ({ url: `/create/${meetingid}`, method: 'GET' }),
+updateMyProfile: (userID, formData) => ({
+  url: `/users/${userID}`,
+  method: "PATCH",
+  body: formData, // keep raw
+  headers: { "Content-Type": "multipart/form-data" },
+}),
 
 
+  // sendMessage: ({ id, text, image }) => ({
+  //   url: `/send/${id}`,
+  //   method: "POST",
+  //   data: { text, image },
+  // }),
 
-  // CRUD
-  createMeeting: ({ meetingId, title, type }) => ({
-    url: `/createmeeting/${meetingId}`,
-    method: 'POST',
-    data: { title, type },
-  }),
+  // getMessages: (meetingid) => ({ url: `/create/${meetingid}`, method: 'GET' }),
 
-  getMeetingById: (id) => ({ url: `/getmeetings/${id}`, method: 'GET' }),
+   
 
-  // Add participant
-  addParticipant: (id) => ({ url: `/meeting/add-participant/${id}`, method: 'PUT' }),
-  addleaveTime: (id) => ({ url: `/meeting/add-leaveTime/${id}`, method: 'PUT' }),
 
-  // Add chat message
-  addMessage: ({ meetingId, message }) => ({
-    url: `/meeting/add-message/${meetingId}`, method: 'PUT',
-    data: { message }
-  }),
 
-  // Add emotion
-  addEmotion: ({ meetingId, emoji }) => ({ url: `/meeting/add-emotion/${meetingId}`, method: 'PUT', data: { emoji } }),
+//   // CRUD
+//   createMeeting: ({ meetingId, title, type }) => ({
+//     url: `/createmeeting/${meetingId}`,
+//     method: 'POST',
+//     data: { title, type },
+//   }),
 
-  getMeetingsForUser: { url: "/usermeetings", method: 'GET' },
+//   getMeetingById: (id) => ({ url: `/getmeetings/${id}`, method: 'GET' }),
+
+//   // Add participant
+//   addParticipant: (id) => ({ url: `/meeting/add-participant/${id}`, method: 'PUT' }),
+//   addleaveTime: (id) => ({ url: `/meeting/add-leaveTime/${id}`, method: 'PUT' }),
+
+//   // Add chat message
+//   addMessage: ({ meetingId, message }) => ({
+//     url: `/meeting/add-message/${meetingId}`, method: 'PUT',
+//     data: { message }
+//   }),
+
+//   // Add emotion
+//   addEmotion: ({ meetingId, emoji }) => ({ url: `/meeting/add-emotion/${meetingId}`, method: 'PUT', data: { emoji } }),
+
+//   getMeetingsForUser: { url: "/usermeetings", method: 'GET' },
 }; 

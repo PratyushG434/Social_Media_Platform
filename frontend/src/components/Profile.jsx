@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react"
 import API from "../service/api"
-
-export default function Profile({ userId, onNavigate }) {
+import { useNavigate } from "react-router-dom"
+export default function Profile({ userId}) {
   const [user, setUser] = useState(null)
   const [userPosts, setUserPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("posts")
-
+  const navigate = useNavigate()
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -41,7 +41,7 @@ export default function Profile({ userId, onNavigate }) {
       <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-border p-4 z-10">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => onNavigate("dashboard")}
+            onClick={() => navigate("/dashboard")}
             className="text-muted-foreground hover:text-card-foreground transition-colors"
           >
             <span className="text-xl">←</span>
@@ -50,7 +50,7 @@ export default function Profile({ userId, onNavigate }) {
           <h1 className="text-xl font-semibold text-card-foreground">@{user.username}</h1>
 
           <button
-            onClick={() => onNavigate("settings")}
+            onClick={() => navigate("/dashboard/settings")}
             className="text-muted-foreground hover:text-card-foreground transition-colors"
           >
             <span className="text-xl">⚙️</span>
@@ -91,7 +91,7 @@ export default function Profile({ userId, onNavigate }) {
 
             <div className="flex space-x-2">
               <button
-                onClick={() => onNavigate("settings")}
+                onClick={() => navigate("/dashboard/settings")}
                 className="flex-1 bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
               >
                 Edit Profile

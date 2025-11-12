@@ -121,11 +121,20 @@ for (const [key, value] of Object.entries(SERVICE_URLS)) {
         ...config,
       };
   
-      if (axiosConfig.method.toLowerCase() === 'get') {
-        axiosConfig.params = config.params || {};
-      } else {
-        axiosConfig.data = serviceConfig.body || body || {};
-      }
+      
+     if (axiosConfig.method.toLowerCase() === 'get') {
+  axiosConfig.params = config.params || {};
+} else {
+  // ✅ Allow FormData to pass through directly
+  if (body instanceof FormData) {
+    axiosConfig.data = body;
+  } else if (serviceConfig.body instanceof FormData) {
+    axiosConfig.data = serviceConfig.body;
+  } else {
+    axiosConfig.data = serviceConfig.body || body || {};
+  }
+}
+
   
       return axiosInstance(axiosConfig);
     };
