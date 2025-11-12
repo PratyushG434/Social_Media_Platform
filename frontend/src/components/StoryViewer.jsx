@@ -1,67 +1,70 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import API from "../service/api"
+import { useLocation, useNavigate } from "react-router-dom"
 
-export default function StoryViewer({ onNavigate }) {
+export default function StoryViewer() {
+  const [storiesData, setStoriesData] = useState([])
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [currentUserIndex, setCurrentUserIndex] = useState(0)
   const [progress, setProgress] = useState(0)
-
-  // Mock stories data
-  const [storiesData] = useState([
-    {
-      userId: 2,
-      user: {
-        username: "sarah_wilson",
-        displayName: "Sarah Wilson",
-        profilePic: "/placeholder.svg?key=sarah_story",
-      },
-      stories: [
-        {
-          id: 1,
-          mediaUrl: "/placeholder.svg?key=story1",
-          contentType: "image",
-          timestamp: "2h ago",
-          duration: 5000,
-        },
-        {
-          id: 2,
-          mediaUrl: "/placeholder.svg?key=story2",
-          contentType: "image",
-          timestamp: "1h ago",
-          duration: 5000,
-        },
-      ],
-    },
-    {
-      userId: 3,
-      user: {
-        username: "mike_photo",
-        displayName: "Mike Photography",
-        profilePic: "/placeholder.svg?key=mike_story",
-      },
-      stories: [
-        {
-          id: 3,
-          mediaUrl: "/placeholder.svg?key=story3",
-          contentType: "image",
-          timestamp: "3h ago",
-          duration: 5000,
-        },
-      ],
-    },
-  ])
-
+  const [loading, setLoading] = useState(true)
   const [replyText, setReplyText] = useState("")
   const [showReactions, setShowReactions] = useState(false)
+  const [likedStories, setLikedStories] = useState(new Set()) 
+
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { userIds = [] } = location.state || {}
+
+  // ✅ Fetch stories for each user
+  useEffect(() => {
+    const fetchStories = async () => {
+      try {
+        if (!userIds.length) return
+
+        const allUsersStories = []
+        for (const userId of userIds) {
+          const response = await API.getUserStories(userId)
+          if (response?.isSuccess && response.data?.stories?.length) {
+            const userStories = response.data.stories
+            const first = userStories[0]
+            allUsersStories.push({
+              userId,
+              user: {
+                username: first.username,
+                displayName: first.display_name || first.username,
+                profilePic: first.profile_pic_url,
+              },
+              stories: userStories.map((s) => ({
+                id: s.story_id,
+                mediaUrl: s.media_url,
+                contentType: s.content_type,
+                timestamp: new Date(s.timestamp).toLocaleString(),
+                duration: 5000,
+              })),
+            })
+          }
+        }
+
+        setStoriesData(allUsersStories)
+      } catch (err) {
+        console.error("Error fetching user stories:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStories()
+  }, [userIds])
 
   const currentUserStories = storiesData[currentUserIndex]
   const currentStory = currentUserStories?.stories[currentStoryIndex]
 
-  // Auto-progress story
+  // Auto progress story
   useEffect(() => {
     if (!currentStory) return
-
     const timer = setInterval(() => {
       setProgress((prev) => {
         const newProgress = prev + 100 / (currentStory.duration / 100)
@@ -72,11 +75,11 @@ export default function StoryViewer({ onNavigate }) {
         return newProgress
       })
     }, 100)
-
     return () => clearInterval(timer)
   }, [currentStory, currentStoryIndex, currentUserIndex])
 
   const handleNextStory = () => {
+    if (!currentUserStories) return
     if (currentStoryIndex < currentUserStories.stories.length - 1) {
       setCurrentStoryIndex(currentStoryIndex + 1)
       setProgress(0)
@@ -85,11 +88,12 @@ export default function StoryViewer({ onNavigate }) {
       setCurrentStoryIndex(0)
       setProgress(0)
     } else {
-      onNavigate("dashboard")
+      navigate("/dashboard")
     }
   }
 
   const handlePrevStory = () => {
+    if (!currentUserStories) return
     if (currentStoryIndex > 0) {
       setCurrentStoryIndex(currentStoryIndex - 1)
       setProgress(0)
@@ -101,31 +105,84 @@ export default function StoryViewer({ onNavigate }) {
     }
   }
 
-  const handleReply = (e) => {
-    e.preventDefault()
-    if (replyText.trim()) {
-      // Mock sending reply
-      setReplyText("")
-      alert("Reply sent!")
+  // ✅ Like / Unlike a story
+  const handleToggleLike = async () => {
+    if (!currentStory) return
+    const storyId = currentStory.id
+    const isCurrentlyLiked = likedStories.has(storyId)
+
+    // Optimistic UI update
+    const updatedLikes = new Set(likedStories)
+    if (isCurrentlyLiked) updatedLikes.delete(storyId)
+    else updatedLikes.add(storyId)
+    setLikedStories(updatedLikes)
+
+    try {
+      const response = await API.toggleStoryLike({storyId})
+      if (!response?.isSuccess) throw new Error("Failed to toggle story like")
+
+      const { liked } = response.data
+      const newLikes = new Set(likedStories)
+      if (liked) newLikes.add(storyId)
+      else newLikes.delete(storyId)
+      setLikedStories(newLikes)
+    } catch (err) {
+      console.error("Error toggling story like:", err)
     }
   }
 
-  const handleReaction = (reaction) => {
-    // Mock sending reaction
+  // ✅ React to story (emoji)
+  const handleReaction = async (reaction) => {
+    if (!currentStory) return
     setShowReactions(false)
-    alert(`Sent ${reaction} reaction!`)
+
+    const emojiToReactionMap = {
+      "❤️": "heart",
+      "😂": "laugh",
+      "😮": "surprised",
+      "😢": "sad",
+      "😡": "angry",
+      "👍": "like",
+    }
+
+    const reactionType = emojiToReactionMap[reaction] || "unknown"
+
+    try {
+      const response = await API.reactToStory({storyId : currentStory.id, reaction : reactionType })
+      if (!response?.isSuccess) throw new Error("Failed to react to story")
+
+      console.log("Reaction sent:", response.data.reaction)
+    } catch (err) {
+      console.error("Error sending reaction:", err)
+    }
+  }
+
+  const handleReply = (e) => {
+    e.preventDefault()
+    if (replyText.trim()) {
+      setReplyText("")
+      alert("Reply sent!") // Replace with backend logic later
+    }
   }
 
   const reactions = ["❤️", "😂", "😮", "😢", "😡", "👍"]
 
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center text-white">
+        <p>Loading stories...</p>
+      </div>
+    )
+  }
+
   if (!currentStory) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="text-white text-center">
+      <div className="fixed inset-0 bg-black flex items-center justify-center text-white">
+        <div className="text-center">
           <div className="text-6xl mb-4">📱</div>
           <p>No stories available</p>
           <button
-            onClick={() => onNavigate("dashboard")}
+            onClick={() => navigate("/dashboard")}
             className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg"
           >
             Back to Feed
@@ -134,6 +191,8 @@ export default function StoryViewer({ onNavigate }) {
       </div>
     )
   }
+
+  const isLiked = likedStories.has(currentStory.id)
 
   return (
     <div className="fixed inset-0 bg-black z-50">
@@ -164,18 +223,27 @@ export default function StoryViewer({ onNavigate }) {
             <p className="text-white/70 text-xs">{currentStory.timestamp}</p>
           </div>
         </div>
-        <button onClick={() => onNavigate("dashboard")} className="text-white hover:text-white/70 transition-colors">
+        <button onClick={() => navigate("/dashboard")} className="text-white hover:text-white/70 transition-colors">
           <span className="text-2xl">×</span>
         </button>
       </div>
 
       {/* Story content */}
       <div className="relative w-full h-full flex items-center justify-center">
-        <img
-          src={currentStory.mediaUrl || "/placeholder.svg"}
-          alt="Story"
-          className="max-w-full max-h-full object-contain"
-        />
+        {currentStory.contentType === "video" ? (
+          <video
+            src={currentStory.mediaUrl}
+            autoPlay
+            muted
+            className="max-w-full max-h-full object-contain"
+          />
+        ) : (
+          <img
+            src={currentStory.mediaUrl || "/placeholder.svg"}
+            alt="Story"
+            className="max-w-full max-h-full object-contain"
+          />
+        )}
 
         {/* Navigation areas */}
         <button onClick={handlePrevStory} className="absolute left-0 top-0 w-1/3 h-full z-10" />
@@ -184,6 +252,16 @@ export default function StoryViewer({ onNavigate }) {
 
       {/* Bottom controls */}
       <div className="absolute bottom-4 left-4 right-4 z-20">
+        {/* Like Button ❤️ */}
+        <div className="flex justify-center mb-3">
+          <button
+            onClick={handleToggleLike}
+            className={`text-3xl transition-transform ${isLiked ? "scale-110 text-red-500" : "text-white hover:scale-110"}`}
+          >
+            {isLiked ? "❤️" : "🤍"}
+          </button>
+        </div>
+
         {/* Reactions */}
         {showReactions && (
           <div className="mb-4 flex justify-center space-x-4">

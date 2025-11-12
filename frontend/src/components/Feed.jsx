@@ -8,10 +8,10 @@ import API from "../service/api"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate } from "react-router-dom"
 export default function Feed() {
- const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState("all")
-  const [posts, setPosts] = useState([])     
-  const {authUser} = useAuthStore();
+  const [posts, setPosts] = useState([])
+  const { authUser } = useAuthStore();
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   useEffect(() => {
@@ -176,8 +176,8 @@ export default function Feed() {
               key={filter.id}
               onClick={() => setFilterType(filter.id)}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${filterType === filter.id
-                  ? "bg-primary text-white shadow-lg shadow-primary/30"
-                  : "bg-white/60 text-gray-700 hover:bg-white/80"
+                ? "bg-primary text-white shadow-lg shadow-primary/30"
+                : "bg-white/60 text-gray-700 hover:bg-white/80"
                 }`}
             >
               <span>{filter.icon}</span>
@@ -231,9 +231,9 @@ export default function Feed() {
       {/* Posts Feed */}
       <div className="space-y-5 px-4">
         {posts.length > 0 ? (
-          posts.map((post) => (
-            <PostCard key={post.id} post={post}  />
-          ))
+          posts
+            .filter((post) => post.user_id !== authUser?.user_id) // ✅ show only others’ posts
+            .map((post) => <PostCard key={post.id} post={post} />)
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">
             <div className="text-6xl mb-4">🔍</div>
@@ -241,6 +241,7 @@ export default function Feed() {
             <p className="text-gray-500">Try adjusting your search or filters</p>
           </div>
         )}
+
         {/* {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
             <PostCard key={post.id} post={post}  />

@@ -87,15 +87,15 @@ const processError = async (error) =>{
             code : ""
         }  
     }
-    else{
-        //jinme kuch nahi ata
-        //something happend in setting up req that triggers and error
-        console.log('error in network ' , error.toJSON());
-        return{
-            isError :' true',
-            msg : API_NOTIFICATION_MESSAGES.netWorkError ,
-            code : ""//yaha pe backend ke pass req gai he nahi
-        }
+    else {
+        if (error.toJSON) console.log('error in network', error.toJSON());
+        else console.log('error in network', error.message || error);
+
+        return {
+            isError: 'true',
+            msg: API_NOTIFICATION_MESSAGES.netWorkError,
+            code: ''
+        };
     }
 }
 
@@ -124,7 +124,7 @@ for (const [key, value] of Object.entries(SERVICE_URLS)) {
       if (axiosConfig.method.toLowerCase() === 'get') {
         axiosConfig.params = config.params || {};
       } else {
-        axiosConfig.data = body;
+        axiosConfig.data = serviceConfig.body || body || {};
       }
   
       return axiosInstance(axiosConfig);

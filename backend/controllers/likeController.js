@@ -2,8 +2,8 @@ const likeService = require('../services/likeService');
 
 exports.toggleLike = async (req, res) => {
     const userId = req.user.user_id;
-    const { postId } = req.params;
-
+    const postId= req.params.id;
+    
     try {
         const liked = await likeService.toggleLike(postId, userId);
         if (liked) {

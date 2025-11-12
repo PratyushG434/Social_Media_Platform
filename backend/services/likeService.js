@@ -8,7 +8,9 @@ const postExists = async (postId) => {
 
 
 exports.toggleLike = async (postId, userId) => {
+    // console.log(userId, postId);
     if (!(await postExists(postId))) {
+
         throw new Error('Post not found.');
     }
 

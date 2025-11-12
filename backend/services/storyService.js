@@ -14,12 +14,12 @@ const storyExistsAndIsActive = async (storyId) => {
 
 
 
-exports.addStory = async (userId, content, media_url, content_type) => {
+exports.addStory = async (userId, content, media_url, content_type, public_id) => {
     const result = await db.query(
-        `INSERT INTO stories (user_id, content, media_url, content_type)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO stories (user_id, content, media_url, content_type, cloudinary_public_id)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING story_id, user_id, content, media_url, content_type, timestamp, expires_at;`,
-        [userId, content || null, media_url || null, content_type]
+        [userId, content || null, media_url || null, content_type, public_id || null]
     );
     return result.rows[0];
 };

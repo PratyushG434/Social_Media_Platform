@@ -1,8 +1,12 @@
 "use client"
 
-import { useState } from "react"
-
+import { useEffect, useState } from "react"
+import API from "../service/api"
+import { useNotifications } from "./Notification-system";
+import { useAuthStore } from "../store/useAuthStore";
 export default function PostCard({ post, currentUser, onNavigate }) {
+  const { addNotification } = useNotifications();
+  const { authUser} = useAuthStore();
   const normalizedPost = {
     id: post.post_id,
     content: post.content,
@@ -13,63 +17,105 @@ export default function PostCard({ post, currentUser, onNavigate }) {
       displayName: post.display_name || post.username,
       profilePic: post.profile_pic_url,
     },
-    likes: post.likes_count,
-    comments: post.comments_count,
-    isLiked: post.isLiked || false,
-    isSaved: post.isSaved || false,
+    likes: post.likes_count || 0,
+    comments: post.comments_count || 0,
+    isLiked: post.isLiked ?? false,
   }
-  
-  const [isLiked, setIsLiked] = useState(normalizedPost.isLiked)
-  const [isSaved, setIsSaved] = useState(normalizedPost.isSaved)
+
+  const [isLiked, setIsLiked] = useState(post.isLiked)
   const [likeCount, setLikeCount] = useState(normalizedPost.likes)
   const [showComments, setShowComments] = useState(false)
   const [newComment, setNewComment] = useState("")
-  const [showShareMenu, setShowShareMenu] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
-  
-  
-  const [comments] = useState([
-    {
-      id: 1,
-      user: { username: "alex_dev", displayName: "Alex Developer", profilePic: "/man-profile.png" },
-      content: "Amazing shot! 📸",
-      timestamp: "1h ago",
-      likes: 5,
-    },
-    {
-      id: 2,
-      user: { username: "lisa_design", displayName: "Lisa Designer", profilePic: "/woman-profile.png" },
-      content: "Love the colors in this!",
-      timestamp: "30m ago",
-      likes: 3,
-    },
-  ])
+  const [comments, setComments] = useState([])
+  const [commentsLoaded, setCommentsLoaded] = useState(false)
+  const [loadingComments, setLoadingComments] = useState(false)
 
-  const handleLike = () => {
-    setIsLiked(!isLiked)
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
-  }
+  // ✅ Like toggle logic (unchanged)
+  const handleToggleLike = async () => {
+    try {
+      const prevLiked = isLiked
+      setIsLiked(!isLiked)
+      setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1))
 
-  const handleSave = () => {
-    setIsSaved(!isSaved)
-  }
+      const response = await API.toggleLike(normalizedPost.id)
+      if (!response?.isSuccess) throw new Error("Failed to toggle like")
 
-  const handleComment = (e) => {
-    e.preventDefault()
-    if (newComment.trim()) {
-      setNewComment("")
-      setShowComments(true)
+      const { liked } = response.data
+      if (liked !== !prevLiked) {
+        setIsLiked(liked)
+        setLikeCount((prev) => (liked ? prev + 1 : prev - 1))
+      }
+    } catch (err) {
+      console.log("Like toggle error:", err)
+      setIsLiked((prev) => !prev)
+      setLikeCount((prev) => (isLiked ? prev + 1 : prev - 1))
     }
   }
 
-  const handleShare = (platform) => {
-    alert(`Sharing to ${platform}`)
-    setShowShareMenu(false)
+  // ✅ Fetch comments (only first time)
+  const handleToggleComments = async () => {
+    if (showComments) {
+      // if already open, just close it
+      setShowComments(false)
+      return
+    }
+
+    setShowComments(true)
+
+    // if already loaded once, don't refetch
+    if (commentsLoaded) return
+
+    try {
+      setLoadingComments(true)
+      const response = await API.getComments({ postId: normalizedPost.id })
+      if (!response?.isSuccess) throw new Error("Failed to load comments")
+
+      setComments(response.data.comments || [])
+      setCommentsLoaded(true)
+    } catch (err) {
+      console.error("Error loading comments:", err)
+    } finally {
+      setLoadingComments(false)
+    }
+  }
+
+  // ✅ Add new comment
+  const handleComment = async (e) => {
+    e.preventDefault()
+    if (!newComment.trim()) return
+
+    try {
+      const response = await API.addComment({
+        postId: normalizedPost.id,
+        content: newComment.trim(),
+      })
+      if (!response?.isSuccess) throw new Error("Failed to post comment")
+
+      const addedComment = {
+        ...response.data.comment,
+        username: authUser?.username,
+        display_name: authUser?.display_name,
+        profile_pic_url: authUser?.profile_pic_url,
+      }
+
+      // Add new comment to existing ones in state
+      setComments((prev) => [...prev, addedComment])
+      addNotification?.({
+        type: "success",
+        title: "Comment added successfully",
+        message: "Your comment was successfully added!"
+      })
+
+      setNewComment("")
+      setShowComments(true)
+    } catch (err) {
+      console.error("Error posting comment:", err)
+    }
   }
 
   return (
     <div className="bg-white rounded-2xl border border-primary/10 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-
       {/* Post Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-3">
@@ -123,18 +169,17 @@ export default function PostCard({ post, currentUser, onNavigate }) {
 
       {/* Actions */}
       <div className="p-4">
-
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-5">
-
+            {/* ❤️ Like */}
             <button
-              onClick={handleLike}
-              className={`flex items-center gap-2 transition-all duration-300 group ${
-                isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
-              }`}
+              onClick={handleToggleLike}
+              className={`flex items-center gap-2 transition-all duration-300 group ${isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
+                }`}
             >
               <svg
-                className={`w-6 h-6 transition-transform duration-300 ${isLiked ? "scale-110" : "group-hover:scale-110"}`}
+                className={`w-6 h-6 transition-transform duration-300 ${isLiked ? "scale-110" : "group-hover:scale-110"
+                  }`}
                 fill={isLiked ? "currentColor" : "none"}
                 stroke="currentColor"
                 strokeWidth="2"
@@ -149,8 +194,9 @@ export default function PostCard({ post, currentUser, onNavigate }) {
               <span className="text-sm font-semibold">{likeCount}</span>
             </button>
 
+            {/* 💬 Comments */}
             <button
-              onClick={() => setShowComments(!showComments)}
+              onClick={handleToggleComments}
               className="flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-300 group"
             >
               <svg
@@ -169,36 +215,37 @@ export default function PostCard({ post, currentUser, onNavigate }) {
               <span className="text-sm font-semibold">{normalizedPost.comments}</span>
             </button>
           </div>
-
-          <button
-            onClick={handleSave}
-            className={`transition-all duration-300 ${
-              isSaved ? "text-primary scale-110" : "text-gray-600 hover:text-primary hover:scale-110"
-            }`}
-          >
-            <svg
-              className="w-6 h-6"
-              fill={isSaved ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-              />
-            </svg>
-          </button>
         </div>
 
+        {/* 🗨️ Comments Section */}
         {showComments && (
           <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
-            <p className="text-gray-500 text-sm">Comments loading from backend soon...</p>
+            {loadingComments ? (
+              <p className="text-gray-500 text-sm">Loading comments...</p>
+            ) : comments.length > 0 ? (
+              comments.map((c) => (
+                <div key={c.comment_id} className="flex gap-3 items-start">
+                  <img
+                    src={c.profile_pic_url || "/placeholder.svg"}
+                    alt={c.display_name || c.username}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {c.display_name || c.username}
+                    </p>
+                    <p className="text-gray-700 text-sm">{c.content}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm">No comments yet. Be the first!</p>
+            )}
 
+            {/* ✏️ Add Comment */}
             <form onSubmit={handleComment} className="flex gap-3">
               <img
-                src={currentUser?.profilePic || "/placeholder.svg"}
+                src={authUser?.profilePic || "/placeholder.svg"}
                 alt="You"
                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
               />

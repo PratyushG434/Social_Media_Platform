@@ -3,8 +3,7 @@ require("dotenv").config();
 
 exports.protect = (req, res, next) => {
     const token = req.cookies?.token;
-    console.log(token);
-    console.log("hello");
+   
     if (!token) {
         return res.status(401).json({ message: 'Not authorized, no.' });
     }

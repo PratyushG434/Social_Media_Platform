@@ -21,7 +21,7 @@ exports.addStory = async (req, res) => {
   }
 
   try {
-    let media_url = null;
+    let media_url = null, public_id = null;
 
     // Upload media to Cloudinary if file exists
     if (file) {
@@ -30,10 +30,11 @@ exports.addStory = async (req, res) => {
         resource_type: content_type === 'video' ? 'video' : 'image',
       });
       media_url = uploadResult.secure_url;
+      public_id = uploadResult.public_id;
     }
 
     // Save story entry
-    const newStory = await storyService.addStory(userId, content, media_url, content_type);
+    const newStory = await storyService.addStory(userId, content, media_url, content_type, public_id);
 
     res.status(201).json({
       message: 'Story created successfully!',
