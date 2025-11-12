@@ -41,7 +41,20 @@ exports.updateUserProfile = async (targetUserId, authenticatedUserId, updateData
     if (updateData.profile_pic_url !== undefined) {
         updateFields.push(`profile_pic_url = $${paramIndex++}`);
         queryParams.push(updateData.profile_pic_url);
+        // If profile_pic_url is updated, its public_id should also be updated
+        if (updateData.cloudinary_public_id !== undefined) {
+            updateFields.push(`cloudinary_public_id = $${paramIndex++}`);
+            queryParams.push(updateData.cloudinary_public_id);
+        } else {
+            // If a URL is sent but no public_id, it means a new image.
+            // If URL is null, public_id should also be null.
+            if (!updateData.profile_pic_url) {
+                updateFields.push(`cloudinary_public_id = $${paramIndex++}`);
+                queryParams.push(null);
+            }
+        }
     }
+
     if (updateData.dob !== undefined) {
         updateFields.push(`dob = $${paramIndex++}`);
         queryParams.push(updateData.dob);

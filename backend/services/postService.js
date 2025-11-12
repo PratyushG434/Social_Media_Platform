@@ -5,15 +5,16 @@ const userExists = async (userId) => {
     return result.rows.length > 0;
 };
 
-exports.createPost = async (userId, content, media_url, content_type) => {
+exports.createPost = async (userId, content, media_url, content_type, cloudinary_public_id) => {
     const result = await db.query(
-        `INSERT INTO posts (user_id, content, media_url, content_type)
-         VALUES ($1, $2, $3, $4)
-         RETURNING post_id, user_id, content, media_url, content_type, timestamp;`,
-        [userId, content || null, media_url || null, content_type]
+        `INSERT INTO posts (user_id, content, media_url, content_type, cloudinary_public_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING post_id, user_id, content, media_url, content_type, cloudinary_public_id, timestamp;`,
+        [userId, content || null, media_url || null, content_type, cloudinary_public_id || null]
     );
     return result.rows[0];
 };
+
 
 
 exports.getAllPosts = async () => {
@@ -102,7 +103,7 @@ exports.getPostsByUserId = async (userId) => {
 
 exports.updatePost = async (postId, userId, updateData) => {
     const postOwnerResult = await db.query(
-        `SELECT user_id FROM posts WHERE post_id = $1;`,
+        `SELECT user_id, cloudinary_public_id FROM posts WHERE post_id = $1;`,
         [postId]
     );
     const post = postOwnerResult.rows[0];
@@ -125,6 +126,17 @@ exports.updatePost = async (postId, userId, updateData) => {
     if (updateData.media_url !== undefined) {
         updateFields.push(`media_url = $${paramIndex++}`);
         queryParams.push(updateData.media_url);
+        // If media_url is updated, update its public_id too
+        if (updateData.cloudinary_public_id !== undefined) {
+            updateFields.push(`cloudinary_public_id = $${paramIndex++}`);
+            queryParams.push(updateData.cloudinary_public_id);
+        } else {
+            // If media_url is set to null, ensure public_id is also null
+            if (!updateData.media_url) {
+                updateFields.push(`cloudinary_public_id = $${paramIndex++}`);
+                queryParams.push(null);
+            }
+        }
     }
     if (updateData.content_type !== undefined) {
         updateFields.push(`content_type = $${paramIndex++}`);
@@ -149,7 +161,7 @@ exports.updatePost = async (postId, userId, updateData) => {
 
 exports.deletePost = async (postId, userId) => {
     const postOwnerResult = await db.query(
-        `SELECT user_id FROM posts WHERE post_id = $1;`,
+        `SELECT user_id, cloudinary_public_id FROM posts WHERE post_id = $1;`, // <-- Select public_id
         [postId]
     );
     const post = postOwnerResult.rows[0];
@@ -162,5 +174,7 @@ exports.deletePost = async (postId, userId) => {
     }
 
     await db.query(`DELETE FROM posts WHERE post_id = $1;`, [postId]);
-    return true;
+
+    // Return the public_id so the controller can delete from Cloudinary
+    return { deleted: true, publicId: post.cloudinary_public_id };
 };
