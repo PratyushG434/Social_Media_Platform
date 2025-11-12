@@ -2,9 +2,9 @@ const commentService = require('../services/commentService');
 
 exports.addComment = async (req, res) => {
     const userId = req.user.user_id;
-    const { postId } = req.params;
+    const  postId  = req.params.id;
     const { content } = req.body;
-
+    
     if (!content || content.trim() === '') {
         return res.status(400).json({ message: 'Comment content cannot be empty.' });
     }

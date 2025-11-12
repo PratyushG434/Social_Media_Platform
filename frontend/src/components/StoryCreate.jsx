@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-
+import { useNotifications } from "./Notification-system"
+import { useNavigate } from "react-router-dom"
+import API from "../service/api"
 export default function StoryCreate({ currentUser, onNavigate }) {
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
@@ -9,6 +11,8 @@ export default function StoryCreate({ currentUser, onNavigate }) {
   const [textColor, setTextColor] = useState("#ffffff")
   const [backgroundColor, setBackgroundColor] = useState("#000000")
   const [isPosting, setIsPosting] = useState(false)
+  const { addNotification } = useNotifications()
+  const navigate = useNavigate()
 
   const handleMediaChange = (e) => {
     const file = e.target.files[0]
@@ -22,16 +26,64 @@ export default function StoryCreate({ currentUser, onNavigate }) {
     }
   }
 
-  const handlePost = async () => {
-    if (!mediaFile && !storyText.trim()) return
+  const handlePost = async (e) => {
+    e.preventDefault()
+    if (!storyText.trim() && !mediaFile) return
 
-    setIsPosting(true)
+    try {
+      setIsPosting(true)
 
-    // Mock posting delay
-    setTimeout(() => {
+      // Create FormData for upload
+      const formData = new FormData()
+
+      // Add file if exists (for 'image' or 'video' stories)
+      if (mediaFile) {
+        formData.append("content", mediaFile)
+        formData.append(
+          "content_type",
+          mediaFile.type.startsWith("video") ? "video" : "image"
+        )
+      } else {
+        // Otherwise, it's a text story
+        formData.append("content", storyText.trim())
+        formData.append("content_type", "text")
+      }
+
+      // Call the API
+      const response = await API.createStory(formData)
+
+      if (!response?.isSuccess) {
+        throw new Error("Failed to create story")
+
+      }
+
+      // ✅ You can log or handle the response here
+      console.log("Story created successfully!", response.data.story)
+
+      addNotification?.({
+        type: "success",
+        title: "Story Created",
+        message: "Your story was successfully uploaded!"
+      })
+
+      // Reset UI
+      setStoryText("")
+      setMediaFile(null)
+      setMediaPreview(null)
+
+      // Navigate back
+      onNavigate?.("dashboard")
+    } catch (err) {
+      console.error("Story upload failed:", err)
+      addNotification?.({
+        type: "error",
+        title: "Story Failed",
+        message: err?.message || "Something went wrong"
+      })
+
+    } finally {
       setIsPosting(false)
-      onNavigate("dashboard")
-    }, 2000)
+    }
   }
 
   const colorOptions = [
@@ -51,7 +103,7 @@ export default function StoryCreate({ currentUser, onNavigate }) {
     <div className="fixed inset-0 bg-black z-50">
       {/* Header */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-        <button onClick={() => onNavigate("dashboard")} className="text-white hover:text-white/70 transition-colors">
+        <button onClick={() => navigate("dashboard")} className="text-white hover:text-white/70 transition-colors">
           <span className="text-xl">←</span>
         </button>
         <h1 className="text-white font-semibold">Create Story</h1>
@@ -119,9 +171,8 @@ export default function StoryCreate({ currentUser, onNavigate }) {
                 <button
                   key={color}
                   onClick={() => setTextColor(color)}
-                  className={`w-6 h-6 rounded-full border-2 ${
-                    textColor === color ? "border-white" : "border-white/30"
-                  }`}
+                  className={`w-6 h-6 rounded-full border-2 ${textColor === color ? "border-white" : "border-white/30"
+                    }`}
                   style={{ backgroundColor: color }}
                 />
               ))}
@@ -132,9 +183,8 @@ export default function StoryCreate({ currentUser, onNavigate }) {
                 <button
                   key={color}
                   onClick={() => setBackgroundColor(color)}
-                  className={`w-6 h-6 rounded-full border-2 ${
-                    backgroundColor === color ? "border-white" : "border-white/30"
-                  }`}
+                  className={`w-6 h-6 rounded-full border-2 ${backgroundColor === color ? "border-white" : "border-white/30"
+                    }`}
                   style={{ backgroundColor: color }}
                 />
               ))}

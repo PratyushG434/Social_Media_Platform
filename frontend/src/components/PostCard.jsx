@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import API from "../service/api"
 
 export default function PostCard({ post, currentUser, onNavigate }) {
   const normalizedPost = {
@@ -13,52 +14,87 @@ export default function PostCard({ post, currentUser, onNavigate }) {
       displayName: post.display_name || post.username,
       profilePic: post.profile_pic_url,
     },
-    likes: post.likes_count,
-    comments: post.comments_count,
-    isLiked: post.isLiked || false,
-    isSaved: post.isSaved || false,
+    likes: post.likes_count || 0,
+    comments: post.comments_count || 0,
+    isLiked: post.isLiked ?? false,
+
+
   }
-  
-  const [isLiked, setIsLiked] = useState(normalizedPost.isLiked)
-  const [isSaved, setIsSaved] = useState(normalizedPost.isSaved)
+
+  const [isLiked, setIsLiked] = useState(post.isLiked)
   const [likeCount, setLikeCount] = useState(normalizedPost.likes)
   const [showComments, setShowComments] = useState(false)
   const [newComment, setNewComment] = useState("")
   const [showShareMenu, setShowShareMenu] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
-  
-  
-  const [comments] = useState([
-    {
-      id: 1,
-      user: { username: "alex_dev", displayName: "Alex Developer", profilePic: "/man-profile.png" },
-      content: "Amazing shot! 📸",
-      timestamp: "1h ago",
-      likes: 5,
-    },
-    {
-      id: 2,
-      user: { username: "lisa_design", displayName: "Lisa Designer", profilePic: "/woman-profile.png" },
-      content: "Love the colors in this!",
-      timestamp: "30m ago",
-      likes: 3,
-    },
-  ])
+  const [comments, setComments] = useState([])
 
-  const handleLike = () => {
-    setIsLiked(!isLiked)
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
+ 
+  // // ✅ Fetch like status (optional)
+  // useEffect(() => {
+  //   const fetchLikeStatus = async () => {
+  //     try {
+  //       const response = await API.getPostLikes(normalizedPost.id)
+  //       if (response?.isSuccess) {
+  //         const { user_has_liked } = response.data
+  //         if (typeof user_has_liked === "boolean") setIsLiked(user_has_liked)
+  //       }
+  //     } catch (err) {
+  //       console.log("Like status fetch error:", err)
+  //     }
+  //   }
+
+  //   fetchLikeStatus()
+  // }, [normalizedPost.id])
+
+
+  const handleToggleLike = async () => {
+    try {
+      // Optimistic update
+      const prevLiked = isLiked
+      setIsLiked(!isLiked)
+      setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1))
+
+      // API call
+      const response = await API.toggleLike(normalizedPost.id)
+      if (!response?.isSuccess) throw new Error("Failed to toggle like")
+
+      const { liked } = response.data
+
+      // Sync with backend if mismatch (edge case)
+      if (liked !== !prevLiked) {
+        setIsLiked(liked)
+        setLikeCount((prev) => (liked ? prev + 1 : prev - 1))
+      }
+    } catch (err) {
+      console.log("Like toggle error:", err)
+
+      // Rollback UI on failure
+      setIsLiked((prev) => !prev)
+      setLikeCount((prev) => (isLiked ? prev + 1 : prev - 1))
+    }
   }
 
-  const handleSave = () => {
-    setIsSaved(!isSaved)
-  }
 
-  const handleComment = (e) => {
+  const handleComment = async (e) => {
     e.preventDefault()
-    if (newComment.trim()) {
-      setNewComment("")
+    if (!newComment.trim()) return
+
+    try {
+      
+      const response = await API.addComment({ postId: normalizedPost.id, content: newComment.trim() });
+      if (!response?.isSuccess) throw new Error("Failed to post comment")
+
+      console.log("Comment added:", response.data.comment)
+
+      // Show comments section after posting
       setShowComments(true)
+      setNewComment("")
+      setComments((prev) => [...prev, response.data.comment])
+
+
+    } catch (err) {
+      console.error("Error posting comment:", err)
     }
   }
 
@@ -123,15 +159,12 @@ export default function PostCard({ post, currentUser, onNavigate }) {
 
       {/* Actions */}
       <div className="p-4">
-
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-5">
-
             <button
-              onClick={handleLike}
-              className={`flex items-center gap-2 transition-all duration-300 group ${
-                isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
-              }`}
+              onClick={handleToggleLike}
+              className={`flex items-center gap-2 transition-all duration-300 group ${isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
+                }`}
             >
               <svg
                 className={`w-6 h-6 transition-transform duration-300 ${isLiked ? "scale-110" : "group-hover:scale-110"}`}
@@ -170,7 +203,7 @@ export default function PostCard({ post, currentUser, onNavigate }) {
             </button>
           </div>
 
-          <button
+          {/* <button
             onClick={handleSave}
             className={`transition-all duration-300 ${
               isSaved ? "text-primary scale-110" : "text-gray-600 hover:text-primary hover:scale-110"
@@ -189,7 +222,7 @@ export default function PostCard({ post, currentUser, onNavigate }) {
                 d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
               />
             </svg>
-          </button>
+          </button> */}
         </div>
 
         {showComments && (

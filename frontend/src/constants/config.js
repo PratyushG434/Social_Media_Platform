@@ -31,47 +31,64 @@ export const API_NOTIFICATION_MESSAGES = {
 
 // API endpoint services
 export const SERVICE_URLS = {
- 
+
   contactUs: { url: '/contactUs', method: 'POST' },
   loginUser: { url: '/auth/login', method: 'POST' },
-  registerUser: {url: '/auth/register' , method: 'POST'} ,
-  updateProfile : {url : '/updateProfile' , method : 'PUT'},
-  checkAuth: {url : '/check' , method : 'GET'},
-  logout: {url : '/logout' , method : 'POST'} ,
-  getUsersForSidebar : {url : '/chatlist' , method : 'GET'},
-  createPost : { url : '/posts' , method : 'POST'},
-  getPosts : { url : '/posts' , method : 'GET'},
-  getUserProfile : { url :'/users/me' , method : 'GET'},
-  getAllPosts :{ url : '/posts' , method : 'GET'},
-  
- sendMessage: ({ id, text , image }) => ({
-  url: `/send/${id}`,
-  method: "POST",
-  data: { text , image},
-}),
-  getMessages : (meetingid) => ({ url : `/create/${meetingid}` , method : 'GET'}),
+  registerUser: { url: '/auth/register', method: 'POST' },
+  updateProfile: { url: '/updateProfile', method: 'PUT' },
+  checkAuth: { url: '/check', method: 'GET' },
+  logout: { url: '/logout', method: 'POST' },
+  getUsersForSidebar: { url: '/chatlist', method: 'GET' },
+  createPost: { url: '/posts', method: 'POST' },
+  createStory: { url: '/stories', method: 'POST' },
+  getPosts: { url: '/posts', method: 'GET' },
+  getUserProfile: { url: '/users/me', method: 'GET' },
+  getAllPosts: { url: '/posts', method: 'GET' },
+  getStoriesFeed: { url: '/stories/feed', method: 'GET' },
+  getUserStories: { url: (userId) => `/stories/user/${userId}`, method: 'GET' },
+  toggleLike: (postId) => ({
+    url: `/posts/${postId}/likes`,
+    method: 'POST'
+  }),
 
-  
+  addComment: ({postId, content}) =>
+  ({
+    url: `posts/${postId}/comments`,
+    method: 'POST',
+    data: { content },
+  }),
 
-   // CRUD
-  createMeeting: ({meetingId ,title , type}) => ({
-     url: `/createmeeting/${meetingId}`,
-      method: 'POST' ,
-     data:{title , type},
-    }),
+  sendMessage: ({ id, text, image }) => ({
+    url: `/send/${id}`,
+    method: "POST",
+    data: { text, image },
+  }),
+
+  getMessages: (meetingid) => ({ url: `/create/${meetingid}`, method: 'GET' }),
+
+
+
+  // CRUD
+  createMeeting: ({ meetingId, title, type }) => ({
+    url: `/createmeeting/${meetingId}`,
+    method: 'POST',
+    data: { title, type },
+  }),
 
   getMeetingById: (id) => ({ url: `/getmeetings/${id}`, method: 'GET' }),
 
   // Add participant
   addParticipant: (id) => ({ url: `/meeting/add-participant/${id}`, method: 'PUT' }),
-    addleaveTime: (id) => ({ url: `/meeting/add-leaveTime/${id}`, method: 'PUT' }),
+  addleaveTime: (id) => ({ url: `/meeting/add-leaveTime/${id}`, method: 'PUT' }),
 
   // Add chat message
-  addMessage: ({meetingId , message}) => ({ url: `/meeting/add-message/${meetingId}`, method: 'PUT' ,
-  data : {message}}),
+  addMessage: ({ meetingId, message }) => ({
+    url: `/meeting/add-message/${meetingId}`, method: 'PUT',
+    data: { message }
+  }),
 
   // Add emotion
-  addEmotion: ({meetingId , emoji}) => ({ url: `/meeting/add-emotion/${meetingId}`, method: 'PUT' ,  data : {emoji} }),
-  
-  getMeetingsForUser: {url : "/usermeetings" , method : 'GET'} ,
+  addEmotion: ({ meetingId, emoji }) => ({ url: `/meeting/add-emotion/${meetingId}`, method: 'PUT', data: { emoji } }),
+
+  getMeetingsForUser: { url: "/usermeetings", method: 'GET' },
 }; 
