@@ -45,9 +45,10 @@ export const SERVICE_URLS = {
   getUserProfile: { url: '/users/me', method: 'GET' },
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
-  getUserStories: (userId) => ({ 
-    url: `/stories/user/${userId}`, 
-    method: 'GET' 
+
+  getUserStories: (userId) => ({
+    url: `/stories/user/${userId}`,
+    method: 'GET'
   }),
   toggleLike: (postId) => ({
     url: `/posts/${postId}/likes`,
@@ -60,19 +61,12 @@ export const SERVICE_URLS = {
     method: 'POST',
     data: { content },
   }),
-updateMyProfile: (userID, formData) => ({
-  url: `/users/${userID}`,
-  method: "PATCH",
-  body: formData, // keep raw
-  headers: { "Content-Type": "multipart/form-data" },
-}),
 
-
-  // sendMessage: ({ id, text, image }) => ({
-  //   url: `/send/${id}`,
-  //   method: "POST",
-  //   data: { text, image },
-  // }),
+  sendMessage: ({ id, text, image }) => ({
+    url: `/send/${id}`,
+    method: "POST",
+    data: { text, image },
+  }),
 
   // getMessages: (meetingid) => ({ url: `/create/${meetingid}`, method: 'GET' }),
 

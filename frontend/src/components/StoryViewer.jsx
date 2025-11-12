@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import API from "../service/api"
+import { useLocation, useNavigate } from "react-router-dom"
 
-import { useLocation,useNavigate } from "react-router-dom"
 export default function StoryViewer() {
   const [storiesData, setStoriesData] = useState([])
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
@@ -12,21 +12,19 @@ export default function StoryViewer() {
   const [loading, setLoading] = useState(true)
   const [replyText, setReplyText] = useState("")
   const [showReactions, setShowReactions] = useState(false)
+  const [likedStories, setLikedStories] = useState(new Set()) 
+
   const location = useLocation()
+  const navigate = useNavigate()
+  const { userIds = [] } = location.state || {}
 
-
-  const { userIds = []} = location.state || {}
-  const   navigate = useNavigate()
-  // ✅ Fetch stories for each userId
+  // ✅ Fetch stories for each user
   useEffect(() => {
     const fetchStories = async () => {
       try {
-        console.log(userIds)
         if (!userIds.length) return
-          
 
         const allUsersStories = []
-
         for (const userId of userIds) {
           const response = await API.getUserStories(userId)
           if (response?.isSuccess && response.data?.stories?.length) {
@@ -67,7 +65,6 @@ export default function StoryViewer() {
   // Auto progress story
   useEffect(() => {
     if (!currentStory) return
-
     const timer = setInterval(() => {
       setProgress((prev) => {
         const newProgress = prev + 100 / (currentStory.duration / 100)
@@ -78,7 +75,6 @@ export default function StoryViewer() {
         return newProgress
       })
     }, 100)
-
     return () => clearInterval(timer)
   }, [currentStory, currentStoryIndex, currentUserIndex])
 
@@ -109,17 +105,64 @@ export default function StoryViewer() {
     }
   }
 
+  // ✅ Like / Unlike a story
+  const handleToggleLike = async () => {
+    if (!currentStory) return
+    const storyId = currentStory.id
+    const isCurrentlyLiked = likedStories.has(storyId)
+
+    // Optimistic UI update
+    const updatedLikes = new Set(likedStories)
+    if (isCurrentlyLiked) updatedLikes.delete(storyId)
+    else updatedLikes.add(storyId)
+    setLikedStories(updatedLikes)
+
+    try {
+      const response = await API.toggleStoryLike({storyId})
+      if (!response?.isSuccess) throw new Error("Failed to toggle story like")
+
+      const { liked } = response.data
+      const newLikes = new Set(likedStories)
+      if (liked) newLikes.add(storyId)
+      else newLikes.delete(storyId)
+      setLikedStories(newLikes)
+    } catch (err) {
+      console.error("Error toggling story like:", err)
+    }
+  }
+
+  // ✅ React to story (emoji)
+  const handleReaction = async (reaction) => {
+    if (!currentStory) return
+    setShowReactions(false)
+
+    const emojiToReactionMap = {
+      "❤️": "heart",
+      "😂": "laugh",
+      "😮": "surprised",
+      "😢": "sad",
+      "😡": "angry",
+      "👍": "like",
+    }
+
+    const reactionType = emojiToReactionMap[reaction] || "unknown"
+
+    try {
+      const response = await API.reactToStory({storyId : currentStory.id, reaction : reactionType })
+      if (!response?.isSuccess) throw new Error("Failed to react to story")
+
+      console.log("Reaction sent:", response.data.reaction)
+    } catch (err) {
+      console.error("Error sending reaction:", err)
+    }
+  }
+
   const handleReply = (e) => {
     e.preventDefault()
     if (replyText.trim()) {
       setReplyText("")
-      alert("Reply sent!") // you can later replace this with your backend comment/reply logic
+      alert("Reply sent!") // Replace with backend logic later
     }
-  }
-
-  const handleReaction = (reaction) => {
-    setShowReactions(false)
-    alert(`Sent ${reaction} reaction!`)
   }
 
   const reactions = ["❤️", "😂", "😮", "😢", "😡", "👍"]
@@ -148,6 +191,8 @@ export default function StoryViewer() {
       </div>
     )
   }
+
+  const isLiked = likedStories.has(currentStory.id)
 
   return (
     <div className="fixed inset-0 bg-black z-50">
@@ -207,6 +252,17 @@ export default function StoryViewer() {
 
       {/* Bottom controls */}
       <div className="absolute bottom-4 left-4 right-4 z-20">
+        {/* Like Button ❤️ */}
+        <div className="flex justify-center mb-3">
+          <button
+            onClick={handleToggleLike}
+            className={`text-3xl transition-transform ${isLiked ? "scale-110 text-red-500" : "text-white hover:scale-110"}`}
+          >
+            {isLiked ? "❤️" : "🤍"}
+          </button>
+        </div>
+
+        {/* Reactions */}
         {showReactions && (
           <div className="mb-4 flex justify-center space-x-4">
             {reactions.map((reaction) => (
@@ -221,6 +277,7 @@ export default function StoryViewer() {
           </div>
         )}
 
+        {/* Reply input */}
         <form onSubmit={handleReply} className="flex items-center space-x-3">
           <input
             type="text"
