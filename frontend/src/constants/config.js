@@ -43,6 +43,11 @@ export const SERVICE_URLS = {
   createStory: { url: '/stories', method: 'POST' },
   getPosts: { url: '/posts', method: 'GET' },
   getUserProfile: { url: '/users/me', method: 'GET' },
+  getUserProfile: ({ userId }) => ({
+    url: `users/${userId}`,
+    method: 'GET',
+  }),
+
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
 
