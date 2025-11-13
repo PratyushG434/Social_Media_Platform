@@ -64,7 +64,7 @@ const SettingsContent = () => {
     if (!authUser?.user_id) return;
     const fetchUser = async () => {
       try {
-        const res = await API.getUserProfile({userId :authUser.user_id});
+        const res = await API.getMyProfile();
         const user = res.user ?? res.data?.user;
         if (!user) throw new Error("User not found");
 

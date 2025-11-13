@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import API from "../service/api"
 import { useNotifications } from "./Notification-system";
 import { useAuthStore } from "../store/useAuthStore";
+
+import { useLocation, useNavigate } from "react-router-dom"
 export default function PostCard({ post, currentUser, onNavigate }) {
   const { addNotification } = useNotifications();
   const { authUser} = useAuthStore();
@@ -30,7 +32,7 @@ export default function PostCard({ post, currentUser, onNavigate }) {
   const [comments, setComments] = useState([])
   const [commentsLoaded, setCommentsLoaded] = useState(false)
   const [loadingComments, setLoadingComments] = useState(false)
-
+  const navigate = useNavigate()
   // ✅ Like toggle logic (unchanged)
   const handleToggleLike = async () => {
     try {
@@ -124,7 +126,7 @@ export default function PostCard({ post, currentUser, onNavigate }) {
               src={normalizedPost.user.profilePic || "/placeholder.svg"}
               alt={normalizedPost.user.displayName}
               className="w-11 h-11 rounded-full object-cover cursor-pointer ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300"
-              onClick={() => onNavigate("profile")}
+              onClick={() => navigate(`/profile/${post.user_id}`)}
             />
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>

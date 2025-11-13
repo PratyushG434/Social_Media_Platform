@@ -4,22 +4,52 @@ import { useEffect, useState } from "react"
 import API from "../service/api"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate } from "react-router-dom"
-export default function Profile({ userId}) {
+import { useParams } from "react-router-dom"
+export default function Profile() {
+
+  const { userId: paramId } = useParams();
+  const userId = paramId || null;
   const [user, setUser] = useState(null)
   const [userPosts, setUserPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("posts")
 
+  const { authUser } = useAuthStore()        // ⭐ NEW
   const navigate = useNavigate()
+
+  const isOwnProfile = !userId               // ⭐ NEW
+
+  const [isFollowing, setIsFollowing] = useState(false)        // ⭐ NEW
+  const [followsMe, setFollowsMe] = useState(false)            // ⭐ NEW
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        console.log(userId)
-        const response = await API.getUserProfile({userId})
+        let response
+
+        if (isOwnProfile) {
+          // ⭐ Fetch my own profile
+          response = await API.getMyProfile()
+        } else {
+          // ⭐ Fetch other user's profile
+          response = await API.getUserProfile({ userId })
+        }
+
         if (!response?.isSuccess) throw new Error("Failed to fetch user")
-        console.log(response.data.user)
-        setUser(response.data.user)
-        setUserPosts(response.data.posts || []) // when you add posts in backend
+
+        const data = response.data.user
+        setUser(data)
+
+        // ⭐ For other users → extract follow states
+        if (!isOwnProfile) {
+          const followers = data.followers?.map((u) => u.user_id) || []
+          const following = data.following?.map((u) => u.user_id) || []
+
+          setFollowsMe(followers.includes(authUser.user_id))
+          setIsFollowing(following.includes(authUser.user_id))
+        }
+
+        setUserPosts(data.posts || [])
       } catch (err) {
         console.log("Profile fetch error =>", err)
       } finally {
@@ -28,7 +58,22 @@ export default function Profile({ userId}) {
     }
 
     fetchUser()
-  }, [userId])
+  }, [userId, isOwnProfile])
+
+  // ⭐ Follow / Unfollow handler
+  const handleFollowToggle = async () => {
+    try {
+ 
+      const res = await API.toggleFollow({userId} )
+      if (!res?.isSuccess) return
+
+      const { following } = res.data // boolean
+
+      setIsFollowing(following)
+    } catch (err) {
+      console.error("Follow error:", err)
+    }
+  }
 
   if (loading) {
     return (
@@ -92,16 +137,40 @@ export default function Profile({ userId}) {
               </button>
             </div>
 
+            {/* ⭐ BUTTON LOGIC */}
             <div className="flex space-x-2">
-              <button
-                onClick={() => navigate("/dashboard/settings")}
-                className="flex-1 bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
-              >
-                Edit Profile
-              </button>
-              <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
-                Share Profile
-              </button>
+              {isOwnProfile ? (
+                <>
+                  {/* Edit Profile + Share */}
+                  <button
+                    onClick={() => navigate("/dashboard/settings")}
+                    className="flex-1 bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                  >
+                    Edit Profile
+                  </button>
+                  <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
+                    Share Profile
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* ⭐ OTHER USER PROFILE BUTTON */}
+                  <button
+                    onClick={handleFollowToggle}
+                    className="flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    {followsMe && !isFollowing
+                      ? "Follow Back"
+                      : isFollowing
+                        ? "Unfollow"
+                        : "Follow"}
+                  </button>
+
+                  <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
+                    Share Profile
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -111,22 +180,20 @@ export default function Profile({ userId}) {
           <div className="flex">
             <button
               onClick={() => setActiveTab("posts")}
-              className={`flex-1 py-3 text-center font-medium transition-colors ${
-                activeTab === "posts"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-card-foreground"
-              }`}
+              className={`flex-1 py-3 text-center font-medium transition-colors ${activeTab === "posts"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-card-foreground"
+                }`}
             >
               <span className="text-lg mr-2">📱</span> Posts
             </button>
 
             <button
               onClick={() => setActiveTab("tagged")}
-              className={`flex-1 py-3 text-center font-medium transition-colors ${
-                activeTab === "tagged"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-card-foreground"
-              }`}
+              className={`flex-1 py-3 text-center font-medium transition-colors ${activeTab === "tagged"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-card-foreground"
+                }`}
             >
               <span className="text-lg mr-2">🏷️</span> Tagged
             </button>

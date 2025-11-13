@@ -16,8 +16,8 @@ import Explore from "./Explore"
 import { useAuthStore } from "../store/useAuthStore"
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { authUser , onlineUsers } = useAuthStore();
- 
+  const { authUser, onlineUsers } = useAuthStore();
+
   // // ✅ Add this handler
   // const handleNavigate = (path) => {
   //   navigate(path)
@@ -26,7 +26,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* ✅ Pass both props */}
-      { <SideNavigation /> }
+      {<SideNavigation />}
 
       <main className="flex-1 ml-64">
         <Routes>
@@ -34,8 +34,8 @@ export default function Dashboard() {
           <Route path="explore" element={<Explore />} />
           <Route path="videos" element={<Videos />} />
           <Route path="shorts" element={<Shorts />} />
-          <Route path="profile" element={<Profile userId={ authUser.user_id}/>} />
-          <Route path="post-create" element={<PostCreate/>} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="post-create" element={<PostCreate />} />
           <Route path="messages" element={<Messages />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />

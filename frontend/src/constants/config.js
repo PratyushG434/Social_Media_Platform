@@ -1,6 +1,7 @@
 // config.js
 
-import { getuid } from "process";
+
+
 // import { getUserProfile } from "../../../backend/controllers/userController";
 // import { getAllPosts } from "../../../backend/services/postService";
 
@@ -42,11 +43,17 @@ export const SERVICE_URLS = {
   createPost: { url: '/posts', method: 'POST' },
   createStory: { url: '/stories', method: 'POST' },
   getPosts: { url: '/posts', method: 'GET' },
-  getUserProfile: { url: '/users/me', method: 'GET' },
+  getMyProfile: { url: '/users/me', method: 'GET' },
   getUserProfile: ({ userId }) => ({
     url: `users/${userId}`,
     method: 'GET',
   }),
+
+ toggleFollow: ({ userId }) => ({
+  url: `/users/${userId}/follow`,
+  method: "POST"
+}),
+
 
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
