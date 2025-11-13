@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from "react"
 import API from "../service/api"
+import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate } from "react-router-dom"
 export default function Profile({ userId}) {
   const [user, setUser] = useState(null)
   const [userPosts, setUserPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("posts")
+
   const navigate = useNavigate()
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await API.getUserProfile(userId)
+        console.log(userId)
+        const response = await API.getUserProfile({userId})
         if (!response?.isSuccess) throw new Error("Failed to fetch user")
         console.log(response.data.user)
         setUser(response.data.user)

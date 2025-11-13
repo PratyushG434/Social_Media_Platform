@@ -34,8 +34,8 @@ export default function Dashboard() {
           <Route path="explore" element={<Explore />} />
           <Route path="videos" element={<Videos />} />
           <Route path="shorts" element={<Shorts />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="post-create" element={<PostCreate />} />
+          <Route path="profile" element={<Profile userId={ authUser.user_id}/>} />
+          <Route path="post-create" element={<PostCreate/>} />
           <Route path="messages" element={<Messages />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
