@@ -7,11 +7,11 @@ const { protect } = require("../middleware/authMiddleware.js");
 const upload = require("../middleware/upload.js")
 
 
-router.post("/" , protect , upload.single('content'), postController.createPost); // add protect here 
+router.post("/", protect, upload.single('content'), postController.createPost); // add protect here 
 router.get("/:id", postController.getPostById);
 router.get('/feed', protect, postController.getFollowingPostsFeed);
 router.get('/', protect, postController.getDiscoveryFeedPosts);
-router.patch("/:id", protect, postController.updatePost);
+router.patch("/:id", protect, upload.single('content'), postController.updatePost);
 router.delete("/:id", protect, postController.deletePost);
 
 

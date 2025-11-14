@@ -103,43 +103,60 @@ exports.getPostById = async (req, res) => {
   }
 };
 
-
 exports.updatePost = async (req, res) => {
   const userId = req.user.user_id;
   const { id: postId } = req.params;
-  const { content, media_url, content_type } = req.body;
+  const { content, content_type } = req.body;
+  const file = req.file; // Capture the file
 
-  if (!content && !media_url && !content_type) {
-    return res.status(400).json({ message: 'At least one field (content, media_url, content_type) is required for update.' });
-  }
-  if (content_type && !['text', 'image', 'video'].includes(content_type)) {
-    return res.status(400).json({ message: 'Invalid content_type. Must be "text", "image", or "video".' });
+  // Validate inputs
+  if (!content && !file && !content_type) {
+    if (file) fs.unlinkSync(file.path); // Cleanup if validation fails
+    return res.status(400).json({ message: 'At least one field is required for update.' });
   }
 
   try {
-    const updatedPost = await postService.updatePost(postId, userId, { content, media_url, content_type });
+    const updateData = { content, content_type };
 
-    if (!updatedPost) {
-      const postExists = await postService.getPostById(postId);
-      if (!postExists) {
-        return res.status(404).json({ message: 'Post not found.' });
+    // Handle File Upload
+    if (file) {
+      // 1. Fetch post to find OLD media
+      const oldPost = await postService.getPostById(postId);
+
+      // 2. Delete OLD media if it exists and user owns post
+      if (oldPost && oldPost.user_id === userId && oldPost.cloudinary_public_id) {
+        const type = oldPost.content_type === 'video' ? 'video' : 'image';
+        await cloudinary.uploader.destroy(oldPost.cloudinary_public_id, { resource_type: type });
       }
-      return res.status(400).json({ message: 'No valid fields provided for update or other issue.' });
+
+      // 3. Upload NEW media
+      const uploadResult = await cloudinary.uploader.upload(file.path, {
+        folder: 'posts',
+        resource_type: content_type === 'video' ? 'video' : 'image',
+      });
+      updateData.media_url = uploadResult.secure_url;
+      updateData.cloudinary_public_id = uploadResult.public_id;
     }
 
-    res.status(200).json({
-      message: 'Post updated successfully!',
-      post: updatedPost
-    });
+    const updatedPost = await postService.updatePost(postId, userId, updateData);
+
+    if (!updatedPost) {
+      return res.status(404).json({ message: 'Post not found or not authorized.' });
+    }
+
+    res.status(200).json({ message: 'Post updated successfully!', post: updatedPost });
 
   } catch (error) {
     console.error('Error updating post:', error);
-    if (error.message === 'Not authorized to update this post.') {
-      return res.status(403).json({ message: error.message });
-    }
     res.status(500).json({ message: 'Server error updating post.' });
+  } finally {
+    // Cleanup local file
+    if (file && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
   }
 };
+
 
 exports.deletePost = async (req, res) => {
   const userId = req.user.user_id;

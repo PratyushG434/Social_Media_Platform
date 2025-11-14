@@ -82,13 +82,11 @@ exports.updateMyProfile = async (req, res) => {
     const authenticatedUserId = req.user.user_id;
     const { userId: targetUserId } = req.params;
 
-    // ✅ Ensure user updates only their own profile
     if (parseInt(targetUserId) !== authenticatedUserId) {
         return res.status(403).json({ message: "Not authorized to update this user's profile." });
     }
 
     try {
-        // Extract optional text fields
         const { display_name, bio, dob, gender } = req.body;
         const updateData = {};
 
@@ -97,8 +95,14 @@ exports.updateMyProfile = async (req, res) => {
         if (dob) updateData.dob = dob;
         if (gender) updateData.gender = gender;
 
-        // ✅ Handle profile picture upload if present
         if (req.file) {
+            const currentUser = await userService.getUserById(authenticatedUserId);
+
+            // Delete OLD image from Cloudinary if it exists
+            if (currentUser && currentUser.cloudinary_public_id) {
+                await cloudinary.uploader.destroy(currentUser.cloudinary_public_id);
+            }
+
             const uploadResult = await cloudinary.uploader.upload(req.file.path, {
                 folder: 'profile_pics',
                 resource_type: 'image'
@@ -107,12 +111,10 @@ exports.updateMyProfile = async (req, res) => {
             updateData.public_id = uploadResult.public_id;
         }
 
-        // ✅ If no data provided
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ message: "No fields provided for update." });
         }
 
-        // ✅ Perform the update
         const updatedUser = await userService.updateUserProfile(
             authenticatedUserId,
             authenticatedUserId,
@@ -140,7 +142,13 @@ exports.updateMyProfile = async (req, res) => {
         }
 
         res.status(500).json({ message: "Server error updating profile." });
+    } finally {
+        // 3. Clean up local temp file
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
     }
+
 };
 
 exports.changeMyPassword = async (req, res) => {
