@@ -37,6 +37,7 @@ exports.registerUser = async (req, res) => {
 };
 
 
+
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -80,5 +81,24 @@ exports.loginUser = async (req, res) => {
     } catch (error) {
         console.error('Error during user login:', error);
         res.status(500).json({ message: 'Server error during login.' });
+    }
+};
+
+
+
+exports.logoutUser = (req, res) => {
+    try {
+        res.cookie('token', '', {
+            httpOnly: true,
+            expires: new Date(0), // Set expiration date to the past
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+        });
+
+        res.status(200).json({ message: 'Logged out successfully.' });
+
+    } catch (error) {
+        console.error('Error during user logout:', error);
+        res.status(500).json({ message: 'Server error during logout.' });
     }
 };
