@@ -17,7 +17,7 @@ exports.createPost = async (userId, content, media_url, content_type, public_id)
 
 
 
-exports.getAllPosts = async () => {
+exports.getDiscoveryFeedPosts = async (currentUserId) => {
     const result = await db.query(
         `SELECT
             p.post_id,
@@ -29,17 +29,55 @@ exports.getAllPosts = async () => {
             u.username,
             u.display_name,
             u.profile_pic_url,
-            COUNT(DISTINCT l.like_id)::int AS likes_count,     -- Count distinct likes
-            COUNT(DISTINCT c.comment_id)::int AS comments_count -- Count distinct comments
+            p.cloudinary_public_id,
+            p.likes_count,     -- Now directly selecting from posts table
+            p.comments_count,  -- Now directly selecting from posts table
+            EXISTS (SELECT 1 FROM likes WHERE post_id = p.post_id AND user_id = $1) AS user_has_liked
          FROM posts p
          JOIN users u ON p.user_id = u.user_id
-         LEFT JOIN likes l ON p.post_id = l.post_id        -- LEFT JOIN to include posts with no likes
-         LEFT JOIN comments c ON p.post_id = c.post_id     -- LEFT JOIN to include posts with no comments
-         GROUP BY p.post_id, u.user_id                      -- Group by post and user details
-         ORDER BY p.timestamp DESC;`
+         WHERE p.user_id != $1
+           AND p.user_id NOT IN (
+                SELECT following_id
+                FROM follows
+                WHERE follower_id = $1
+            )
+         ORDER BY p.timestamp DESC;` // Removed GROUP BY, as counts are already aggregated
+        , [currentUserId]
     );
     return result.rows;
 };
+
+
+
+exports.getFollowingPostsFeed = async (currentUserId) => {
+    const result = await db.query(
+        `SELECT
+            p.post_id,
+            p.content,
+            p.media_url,
+            p.content_type,
+            p.timestamp,
+            p.user_id,
+            u.username,
+            u.display_name,
+            u.profile_pic_url,
+            p.cloudinary_public_id,
+            p.likes_count,     -- Now directly selecting from posts table
+            p.comments_count,  -- Now directly selecting from posts table
+            EXISTS (SELECT 1 FROM likes WHERE post_id = p.post_id AND user_id = $1) AS user_has_liked
+         FROM posts p
+         JOIN users u ON p.user_id = u.user_id
+         WHERE p.user_id IN (
+                SELECT following_id
+                FROM follows
+                WHERE follower_id = $1
+            )
+         ORDER BY p.timestamp DESC;` // Removed GROUP BY, as counts are already aggregated
+        , [currentUserId]
+    );
+    return result.rows;
+};
+
 
 
 

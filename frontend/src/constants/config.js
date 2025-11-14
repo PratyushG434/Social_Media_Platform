@@ -1,6 +1,7 @@
 // config.js
 
-import { getuid } from "process";
+
+
 // import { getUserProfile } from "../../../backend/controllers/userController";
 // import { getAllPosts } from "../../../backend/services/postService";
 
@@ -42,7 +43,18 @@ export const SERVICE_URLS = {
   createPost: { url: '/posts', method: 'POST' },
   createStory: { url: '/stories', method: 'POST' },
   getPosts: { url: '/posts', method: 'GET' },
-  getUserProfile: { url: '/users/me', method: 'GET' },
+  getMyProfile: { url: '/users/me', method: 'GET' },
+  getUserProfile: ({ userId }) => ({
+    url: `users/${userId}`,
+    method: 'GET',
+  }),
+
+ toggleFollow: ({ userId }) => ({
+  url: `/users/${userId}/follow`,
+  method: "POST"
+}),
+
+
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
 
@@ -67,34 +79,57 @@ export const SERVICE_URLS = {
     method: "POST",
     data: { text, image },
   }),
+  getComments: ({ postId }) =>
+  ({
+    url: `posts/${postId}/comments`,
+    method: 'GET',
 
+  }),
+
+  toggleStoryLike: ({ storyId }) => ({
+    url: `stories/${storyId}/likes`,
+    method: 'POST',
+  }),
+
+  reactToStory: ({ storyId, reaction }) => ({
+    url: `stories/${storyId}/reactions`,
+    method: 'POST',
+    data: { reaction },
+  }),
+
+  updateMyProfile: ({userID, formData}) => ({
+    url: `/users/${userID}`,
+    method: "PATCH",
+    body: formData, // keep raw
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
   // getMessages: (meetingid) => ({ url: `/create/${meetingid}`, method: 'GET' }),
 
-   
 
 
 
-//   // CRUD
-//   createMeeting: ({ meetingId, title, type }) => ({
-//     url: `/createmeeting/${meetingId}`,
-//     method: 'POST',
-//     data: { title, type },
-//   }),
 
-//   getMeetingById: (id) => ({ url: `/getmeetings/${id}`, method: 'GET' }),
+  //   // CRUD
+  //   createMeeting: ({ meetingId, title, type }) => ({
+  //     url: `/createmeeting/${meetingId}`,
+  //     method: 'POST',
+  //     data: { title, type },
+  //   }),
 
-//   // Add participant
-//   addParticipant: (id) => ({ url: `/meeting/add-participant/${id}`, method: 'PUT' }),
-//   addleaveTime: (id) => ({ url: `/meeting/add-leaveTime/${id}`, method: 'PUT' }),
+  //   getMeetingById: (id) => ({ url: `/getmeetings/${id}`, method: 'GET' }),
 
-//   // Add chat message
-//   addMessage: ({ meetingId, message }) => ({
-//     url: `/meeting/add-message/${meetingId}`, method: 'PUT',
-//     data: { message }
-//   }),
+  //   // Add participant
+  //   addParticipant: (id) => ({ url: `/meeting/add-participant/${id}`, method: 'PUT' }),
+  //   addleaveTime: (id) => ({ url: `/meeting/add-leaveTime/${id}`, method: 'PUT' }),
 
-//   // Add emotion
-//   addEmotion: ({ meetingId, emoji }) => ({ url: `/meeting/add-emotion/${meetingId}`, method: 'PUT', data: { emoji } }),
+  //   // Add chat message
+  //   addMessage: ({ meetingId, message }) => ({
+  //     url: `/meeting/add-message/${meetingId}`, method: 'PUT',
+  //     data: { message }
+  //   }),
 
-//   getMeetingsForUser: { url: "/usermeetings", method: 'GET' },
+  //   // Add emotion
+  //   addEmotion: ({ meetingId, emoji }) => ({ url: `/meeting/add-emotion/${meetingId}`, method: 'PUT', data: { emoji } }),
+
+  //   getMeetingsForUser: { url: "/usermeetings", method: 'GET' },
 }; 

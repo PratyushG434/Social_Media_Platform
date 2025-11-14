@@ -232,7 +232,7 @@ export default function Feed() {
       <div className="space-y-5 px-4">
         {posts.length > 0 ? (
           posts
-            .filter((post) => post.user_id !== authUser?.user_id) // ✅ show only others’ posts
+            .filter((post) => post.user_id !== authUser?.user_id) 
             .map((post) => <PostCard key={post.id} post={post} />)
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">

@@ -64,7 +64,7 @@ const SettingsContent = () => {
     if (!authUser?.user_id) return;
     const fetchUser = async () => {
       try {
-        const res = await API.getUserProfile(authUser.user_id);
+        const res = await API.getMyProfile();
         const user = res.user ?? res.data?.user;
         if (!user) throw new Error("User not found");
 
@@ -132,8 +132,8 @@ const handleProfileSubmit = async () => {
     if (selectedFile) formData.append("profile_pic", selectedFile);
 
     const userID = profileData.user_id;
-
-    const res = await API.updateMyProfile(userID, formData);
+    
+    const res = await API.updateMyProfile({userID, formData});
     const user = res.user ?? res.data?.user;
     if (!user) throw new Error("Failed to update");
 
