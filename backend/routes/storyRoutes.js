@@ -6,7 +6,7 @@ const upload = require('../middleware/upload');
 
 
 // protected routes
-router.post('/', protect, upload.single('content'), storyController.addStory);
+router.post('/', protect, upload.single('storyMedia'), storyController.addStory);
 router.get('/feed', protect, storyController.getStoriesFeed);
 
 router.post('/:storyId/likes', protect, storyController.toggleStoryLike);

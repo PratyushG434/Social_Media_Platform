@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 
 exports.getUserById = async (userId) => {
     const result = await db.query(
-        `SELECT user_id, username, email, display_name, bio, profile_pic_url, dob, gender join_date, acc_status
+        `SELECT user_id, username, email, display_name, bio, profile_pic_url, dob, gender, join_date, acc_status
          FROM users
          WHERE user_id = $1;`,
         [userId]
