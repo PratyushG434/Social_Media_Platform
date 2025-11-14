@@ -96,3 +96,18 @@ exports.changeUserPassword = async (userId, currentPassword, newPassword) => {
 
     return true;
 };
+
+
+
+exports.searchUsers = async (query) => {
+    // The '%' signs are wildcards, so 'jo' will match 'john', 'joe', etc.
+    const searchQuery = `%${query}%`;
+    const result = await db.query(
+        `SELECT user_id, username, display_name, profile_pic_url, bio
+         FROM users
+         WHERE username ILIKE $1 OR display_name ILIKE $1
+         LIMIT 10;`,
+        [searchQuery]
+    );
+    return result.rows;
+};
