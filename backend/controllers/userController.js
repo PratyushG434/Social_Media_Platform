@@ -4,6 +4,25 @@ const { getPostsByUserId } = require('../services/postService');
 // const getFollowers = require('../services/followService');
 const cloudinary = require('../db/cloudinary');
 
+
+exports.searchUsers = async (req, res) => {
+    try {
+        const { q } = req.query; // 'q' is our search query parameter
+
+        if (!q || q.trim() === '') {
+            return res.status(200).json([]); // Return empty array if search is empty
+        }
+
+        const users = await userService.searchUsers(q);
+        res.status(200).json(users);
+
+    } catch (error) {
+        console.error('Error searching users:', error);
+        res.status(500).json({ message: 'Server error during user search.' });
+    }
+};
+
+
 exports.getMe = async (req, res) => {
     try {
         const userId = req.user.user_id;
@@ -28,11 +47,6 @@ exports.getMe = async (req, res) => {
         res.status(500).json({ message: 'Server error fetching profile.' });
     }
 };
-
-
-
-
-
 
 
 exports.getUserProfile = async (req, res) => {
@@ -192,3 +206,14 @@ exports.checkAuth = async (req, res) => {
     }
 };
 
+
+exports.getSuggestedUsers = async (req, res) => {
+    try {
+        const currentUserId = req.user.user_id; // From the 'protect' middleware
+        const suggestedUsers = await userService.getSuggestedUsers(currentUserId);
+        res.status(200).json(suggestedUsers);
+    } catch (error) {
+        console.error('Error fetching suggested users:', error);
+        res.status(500).json({ message: 'Server error fetching suggested users.' });
+    }
+};

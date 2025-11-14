@@ -5,7 +5,13 @@ const followController = require("../controllers/followController.js");
 const { protect } = require("../middleware/authMiddleware.js");
 const upload = require('../middleware/upload.js')
 
+
+router.get("/search", userController.searchUsers);
+router.get("/suggestions", protect, userController.getSuggestedUsers);
+
 router.get("/me", protect, userController.getMe);
+router.get("/check", protect, userController.checkAuth);
+
 
 router.get('/:userId', userController.getUserProfile);
 router.patch('/:userId', protect, upload.single('profile_pic'), userController.updateMyProfile);
@@ -17,7 +23,6 @@ router.get("/:userId/following", protect, followController.getFollowing);
 router.get("/:userId/followers", protect, followController.getFollowers);
 
 
-router.get("/check", protect, userController.checkAuth);
 
 module.exports = router;
 

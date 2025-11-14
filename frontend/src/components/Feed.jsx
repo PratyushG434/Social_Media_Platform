@@ -7,6 +7,8 @@ import { useEffect } from "react"
 import API from "../service/api"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate } from "react-router-dom"
+import Avatar from "./Avatar"
+
 export default function Feed() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState("all")
@@ -14,6 +16,9 @@ export default function Feed() {
   const { authUser } = useAuthStore();
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+
   useEffect(() => {
     const getPosts = async () => {
       try {
@@ -31,6 +36,43 @@ export default function Feed() {
 
     getPosts()
   }, [])
+
+  useEffect(() => {
+    const getSuggestions = async () => {
+      setLoadingSuggestions(true);
+      try {
+        const response = await API.getSuggestedUsers();
+        if (response.isSuccess) {
+          // Add a 'isFollowing' property for UI state management
+          setSuggestedUsers(response.data.map(user => ({ ...user, isFollowing: false })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch suggestions:", err);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+    getSuggestions();
+  }, []);
+
+    const handleFollow = async (userIdToFollow, index) => {
+    // Optimistically update the UI
+    const newSuggestedUsers = [...suggestedUsers];
+    newSuggestedUsers[index].isFollowing = true;
+    setSuggestedUsers(newSuggestedUsers);
+
+    try {
+      await API.toggleFollow({ userId: userIdToFollow });
+      // In a real app, you might want to remove the user from suggestions after following
+      // For now, we'll just leave the button in a "Following" state.
+    } catch (err) {
+      console.error("Follow error:", err);
+      // Revert UI on error
+      const revertedUsers = [...suggestedUsers];
+      revertedUsers[index].isFollowing = false;
+      setSuggestedUsers(revertedUsers);
+    }
+  };
 
   // const [posts] = useState([
   //   {
@@ -89,24 +131,7 @@ export default function Feed() {
   //   },
   // ])
 
-  const suggestedUsers = [
-    {
-      id: 5,
-      username: "travel_tom",
-      displayName: "Tom Explorer",
-      profilePic: "/man-traveler.jpg",
-      mutualFriends: 12,
-      isFollowing: false,
-    },
-    {
-      id: 6,
-      username: "art_emma",
-      displayName: "Emma Artist",
-      profilePic: "/woman-artist.png",
-      mutualFriends: 8,
-      isFollowing: false,
-    },
-  ]
+  
 
   // const filteredPosts = posts.filter((post) => {
   //   const matchesSearch =
@@ -125,20 +150,6 @@ export default function Feed() {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             StreamSocial
           </h1>
-          <button
-            onClick={() => ("settings")}
-            className="p-2 hover:bg-primary/10 rounded-full transition-all duration-300 hover:scale-110"
-          >
-            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
         </div>
 
         {/* Search Bar */}
@@ -191,7 +202,7 @@ export default function Feed() {
       <Stories />
 
       {/* Suggested Users */}
-      <div className="bg-gradient-to-br from-white to-primary/5 m-4 rounded-2xl p-5 border border-primary/10 shadow-sm">
+            <div className="bg-gradient-to-br from-white to-primary/5 m-4 rounded-2xl p-5 border border-primary/10 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
             <span className="text-xl">✨</span>
@@ -200,33 +211,44 @@ export default function Feed() {
           <button className="text-sm text-primary hover:text-primary/80 font-medium">See All</button>
         </div>
         <div className="space-y-3">
-          {suggestedUsers.map((user) => (
+          {loadingSuggestions && <p className="text-sm text-muted-foreground">Loading suggestions...</p>}
+          {!loadingSuggestions && suggestedUsers.length === 0 && <p className="text-sm text-muted-foreground">No new suggestions right now.</p>}
+          
+          {!loadingSuggestions && suggestedUsers.map((user, index) => (
             <div
-              key={user.id}
+              key={user.user_id}
               className="flex items-center justify-between p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-all duration-300"
             >
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <img
-                    src={user.profilePic || "/placeholder.svg"}
-                    alt={user.displayName}
-                    className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20"
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                </div>
+              <div 
+                className="flex items-center space-x-3 cursor-pointer"
+                onClick={() => navigate(`/profile/${user.user_id}`)}
+              >
+                <Avatar 
+                  src={user.profile_pic_url} 
+                  name={user.display_name || user.username}
+                  className="w-12 h-12"
+                />
                 <div>
-                  <p className="font-semibold text-gray-800">{user.displayName}</p>
+                  <p className="font-semibold text-gray-800">{user.display_name}</p>
                   <p className="text-xs text-gray-500">@{user.username}</p>
-                  <p className="text-xs text-primary">{user.mutualFriends} mutual friends</p>
                 </div>
               </div>
-              <button className="bg-gradient-to-r from-primary to-secondary text-white px-5 py-2 rounded-full text-sm font-medium hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:scale-105">
-                Follow
+              <button 
+                onClick={() => handleFollow(user.user_id, index)}
+                disabled={user.isFollowing}
+                className={`text-white px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105 ${
+                  user.isFollowing 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30'
+                }`}
+              >
+                {user.isFollowing ? 'Following' : 'Follow'}
               </button>
             </div>
           ))}
         </div>
       </div>
+
 
       {/* Posts Feed */}
       <div className="space-y-5 px-4">
