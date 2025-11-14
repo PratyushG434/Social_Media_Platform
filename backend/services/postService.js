@@ -219,3 +219,34 @@ exports.deletePost = async (postId, userId) => {
         contentType: post.content_type
     };
 };
+
+
+// Add this to postService.js
+
+exports.getLikedPosts = async (currentUserId) => {
+    const result = await db.query(
+        `SELECT
+            p.post_id,
+            p.content,
+            p.media_url,
+            p.content_type,
+            p.timestamp,
+            p.user_id,
+            u.username,
+            u.display_name,
+            u.profile_pic_url,
+            p.cloudinary_public_id,
+            p.likes_count,
+            p.comments_count,
+            -- For liked posts, user_has_liked is always true
+            TRUE AS user_has_liked
+         FROM posts p
+         JOIN users u ON p.user_id = u.user_id
+         -- Join with likes table to find posts liked by the current user
+         JOIN likes l ON p.post_id = l.post_id
+         WHERE l.user_id = $1
+         ORDER BY l.timestamp DESC;`, // Order by when the user liked the post
+        [currentUserId]
+    );
+    return result.rows;
+};

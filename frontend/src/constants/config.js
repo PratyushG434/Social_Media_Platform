@@ -63,7 +63,7 @@ export const SERVICE_URLS = {
   }),
 
 
-
+  getLikedPosts: { url: '/posts/liked', method: 'GET' }, // NEW
   getAllPosts: { url: '/posts', method: 'GET' },
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
 
