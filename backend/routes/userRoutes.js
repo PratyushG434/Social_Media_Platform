@@ -7,6 +7,7 @@ const upload = require('../middleware/upload.js')
 
 
 router.get("/search", userController.searchUsers);
+router.get("/suggestions", protect, userController.getSuggestedUsers);
 
 router.get("/me", protect, userController.getMe);
 router.get("/check", protect, userController.checkAuth);

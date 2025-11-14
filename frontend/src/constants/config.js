@@ -49,10 +49,19 @@ export const SERVICE_URLS = {
     method: 'GET',
   }),
 
- toggleFollow: ({ userId }) => ({
-  url: `/users/${userId}/follow`,
-  method: "POST"
-}),
+  toggleFollow: ({ userId }) => ({
+    url: `/users/${userId}/follow`,
+    method: "POST"
+  }),
+
+  getSuggestedUsers: { url: '/users/suggestions', method: 'GET' }, // NEW
+
+  searchUsers: (query) => ({
+    url: '/users/search',
+    method: 'GET',
+    params: { q: query }
+  }),
+
 
 
   getAllPosts: { url: '/posts', method: 'GET' },

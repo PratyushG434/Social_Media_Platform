@@ -111,3 +111,29 @@ exports.searchUsers = async (query) => {
     );
     return result.rows;
 };
+
+exports.getSuggestedUsers = async (currentUserId) => {
+    const result = await db.query(
+        `SELECT
+            user_id,
+            username,
+            display_name,
+            profile_pic_url,
+            bio
+         FROM
+            users
+         WHERE
+            user_id != $1 -- Exclude the current user themselves
+            AND user_id NOT IN (
+                -- Exclude users the current user is already following
+                SELECT following_id
+                FROM follows
+                WHERE follower_id = $1
+            )
+         ORDER BY
+            join_date DESC -- A simple way to suggest newer users
+         LIMIT 5;`, // Limit the suggestions to a reasonable number
+        [currentUserId]
+    );
+    return result.rows;
+};

@@ -206,3 +206,14 @@ exports.checkAuth = async (req, res) => {
     }
 };
 
+
+exports.getSuggestedUsers = async (req, res) => {
+    try {
+        const currentUserId = req.user.user_id; // From the 'protect' middleware
+        const suggestedUsers = await userService.getSuggestedUsers(currentUserId);
+        res.status(200).json(suggestedUsers);
+    } catch (error) {
+        console.error('Error fetching suggested users:', error);
+        res.status(500).json({ message: 'Server error fetching suggested users.' });
+    }
+};
