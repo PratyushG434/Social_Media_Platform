@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import API from "../service/api"
 import { useNotifications } from "./Notification-system";
 import { useAuthStore } from "../store/useAuthStore";
-
+import Avatar from "./Avatar"; 
 import { useLocation, useNavigate } from "react-router-dom"
 export default function PostCard({ post, currentUser, onNavigate }) {
   const { addNotification } = useNotifications();
@@ -33,7 +33,7 @@ export default function PostCard({ post, currentUser, onNavigate }) {
   const [commentsLoaded, setCommentsLoaded] = useState(false)
   const [loadingComments, setLoadingComments] = useState(false)
   const navigate = useNavigate()
-  // ✅ Like toggle logic (unchanged)
+
   const handleToggleLike = async () => {
     try {
       const prevLiked = isLiked
@@ -121,13 +121,17 @@ export default function PostCard({ post, currentUser, onNavigate }) {
       {/* Post Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-3">
-          <div className="relative">
-            <img
-              src={normalizedPost.user.profilePic || "/placeholder.svg"}
-              alt={normalizedPost.user.displayName}
-              className="w-11 h-11 rounded-full object-cover cursor-pointer ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300"
-              onClick={() => navigate(`/profile/${post.user_id}`)}
+          <div 
+            className="relative cursor-pointer"
+            onClick={() => navigate(`/profile/${post.user_id}`)}
+          >
+            {/* --- FIX: Replace img with Avatar --- */}
+            <Avatar 
+              src={normalizedPost.user.profilePic} 
+              name={normalizedPost.user.displayName}
+              className="w-11 h-11 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300"
             />
+            {/* The online status indicator can stay */}
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
 
@@ -246,9 +250,9 @@ export default function PostCard({ post, currentUser, onNavigate }) {
 
             {/* ✏️ Add Comment */}
             <form onSubmit={handleComment} className="flex gap-3">
-              <img
-                src={authUser?.profilePic || "/placeholder.svg"}
-                alt="You"
+              <Avatar
+                src={authUser?.profile_pic_url}
+                name={authUser?.display_name || authUser?.username}
                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
               />
 

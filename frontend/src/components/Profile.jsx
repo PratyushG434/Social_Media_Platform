@@ -5,6 +5,7 @@ import API from "../service/api"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate } from "react-router-dom"
 import { useParams } from "react-router-dom"
+import Avatar from "./Avatar"; 
 export default function Profile() {
 
   const { userId: paramId } = useParams();
@@ -17,7 +18,7 @@ export default function Profile() {
   const { authUser } = useAuthStore()        // ⭐ NEW
   const navigate = useNavigate()
 
-  const isOwnProfile = !userId               // ⭐ NEW
+  const isOwnProfile = !userId || authUser?.user_id === parseInt(paramId); // More robust check
 
   const [isFollowing, setIsFollowing] = useState(false)        // ⭐ NEW
   const [followsMe, setFollowsMe] = useState(false)            // ⭐ NEW
@@ -37,11 +38,13 @@ export default function Profile() {
 
         if (!response?.isSuccess) throw new Error("Failed to fetch user")
 
-        const data = response.data.user
-        setUser(data)
+        const data = response.data.user||response.data;
+        setUser(data);
+        setUserPosts(data.posts || []);
+
 
         // ⭐ For other users → extract follow states
-        if (!isOwnProfile) {
+        if (!isOwnProfile&&data.followers && authUser) {
           const followers = data.followers?.map((u) => u.user_id) || []
           const following = data.following?.map((u) => u.user_id) || []
 
@@ -58,7 +61,7 @@ export default function Profile() {
     }
 
     fetchUser()
-  }, [userId, isOwnProfile])
+  }, [userId, isOwnProfile,authUser])
 
   // ⭐ Follow / Unfollow handler
   const handleFollowToggle = async () => {
@@ -82,6 +85,22 @@ export default function Profile() {
       </div>
     )
   }
+
+if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 text-center">
+        <h2 className="text-xl font-bold text-destructive">User Not Found</h2>
+        <p className="text-muted-foreground">The profile you are looking for does not exist.</p>
+        <button
+            onClick={() => navigate("/dashboard")}
+            className="mt-4 bg-primary text-primary-foreground py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+        >
+            Go to Feed
+        </button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -109,11 +128,12 @@ export default function Profile() {
       {/* Profile Info */}
       <div className="p-4">
         <div className="flex items-start space-x-4 mb-6">
-          <img
-            src={user.profile_pic_url || "/placeholder.svg"}
-            alt={user.display_name}
-            className="w-20 h-20 rounded-full object-cover"
+          <Avatar
+            src={user.profile_pic_url}
+            name={user.display_name || user.username} 
+            className="w-20 h-20" // Larger size for the profile page
           />
+
 
           <div className="flex-1">
             <h2 className="text-xl font-bold text-card-foreground">{user.display_name}</h2>
