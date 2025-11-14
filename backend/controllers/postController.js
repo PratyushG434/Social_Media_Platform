@@ -42,18 +42,40 @@ exports.createPost = async (req, res) => {
   };
 
 
-exports.getPosts = async (req, res) => {
+  exports.getDiscoveryFeedPosts = async (req, res) => { // Renamed from getPosts
+    const currentUserId = req.user.user_id; // Get the ID of the authenticated user
+
     try {
-        const posts = await postService.getAllPosts();
+        // Delegate fetching the discovery feed posts to the post service
+        const postsFeed = await postService.getDiscoveryFeedPosts(currentUserId);
+
         res.status(200).json({
-            message: 'Posts fetched successfully!',
-            posts: posts
+            message: 'Discovery feed posts fetched successfully!',
+            posts: postsFeed
         });
 
     } catch (error) {
-        console.error('Error fetching posts:', error);
-        res.status(500).json({ message: 'Server error fetching posts.' });
+        console.error('Error fetching discovery feed posts:', error);
+        res.status(500).json({ message: 'Server error fetching discovery feed posts.' });
     }
+};
+
+exports.getFollowingPostsFeed = async (req, res) => {
+  const currentUserId = req.user.user_id; // Get the ID of the authenticated user
+
+  try {
+      // Delegate fetching the following posts feed to the post service
+      const postsFeed = await postService.getFollowingPostsFeed(currentUserId);
+
+      res.status(200).json({
+          message: 'Following feed posts fetched successfully!',
+          posts: postsFeed
+      });
+
+  } catch (error) {
+      console.error('Error fetching following posts feed:', error);
+      res.status(500).json({ message: 'Server error fetching following feed posts.' });
+  }
 };
 
 
