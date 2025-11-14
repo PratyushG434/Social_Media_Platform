@@ -65,7 +65,7 @@ exports.loginUser = async (req, res) => {
             httpOnly: true,          // Prevents JS access (mitigates XSS)
             secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
             sameSite: 'Strict',      // Helps prevent CSRF
-            maxAge: 60 * 60 * 1000,  // 1 hour
+            maxAge: 10 * 60 * 60 * 1000,  // 10 hour
         });
 
         res.status(200).json({

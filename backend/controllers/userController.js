@@ -1,6 +1,6 @@
-const userService = require('../services/userService'); 
-const {getFollowing , getFollowers} = require('../services/followService');
-const {getPostsByUserId}= require('../services/postService');
+const userService = require('../services/userService');
+const { getFollowing, getFollowers } = require('../services/followService');
+const { getPostsByUserId } = require('../services/postService');
 // const getFollowers = require('../services/followService');
 const cloudinary = require('../db/cloudinary');
 
@@ -18,7 +18,7 @@ exports.getMe = async (req, res) => {
         res.status(200).json({
             message: 'User profile fetched successfully.',
             user: user,
-            posts : posts,
+            posts: posts,
             followers: followers,
             following: following
         });
@@ -66,7 +66,7 @@ exports.getUserProfile = async (req, res) => {
                 acc_status: user.acc_status,
                 followers: followers,   // list of follower users
                 following: following,    // list of following users
-                posts : posts           // all the user posts
+                posts: posts           // all the user posts
             }
         });
 
@@ -176,11 +176,11 @@ exports.changeMyPassword = async (req, res) => {
 
 
 exports.checkAuth = async (req, res) => {
-  try {
-    res.status(200).json(req.user);
-  } catch (error) {
-    console.log("Error in checkAuth controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
+    try {
+        res.status(200).json(req.user);
+    } catch (error) {
+        console.log("Error in checkAuth controller", error.message);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
 };
 

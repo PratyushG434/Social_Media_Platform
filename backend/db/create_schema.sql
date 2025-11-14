@@ -8,15 +8,18 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     display_name VARCHAR(100),
     email VARCHAR(155) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL, -- Added for security (will store bcrypt hash)
+    password_hash VARCHAR(255) NOT NULL,
     bio TEXT,
     profile_pic_url VARCHAR(255),
+    cloudinary_public_id VARCHAR(255), -- Added directly here
     dob DATE,
     gender VARCHAR(10),
     join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     acc_status VARCHAR(20) CHECK (acc_status IN ('Active', 'Inactive')) DEFAULT 'Active',
-    google_id VARCHAR(200) UNIQUE -- For future Google OAuth
+    google_id VARCHAR(200) UNIQUE
 );
+
+
 
 -- -----------------------------------------------------
 -- 2. FOLLOWS Table (M:M relationship between users)
@@ -39,6 +42,9 @@ CREATE TABLE posts (
     content TEXT,
     media_url VARCHAR(200),
     content_type VARCHAR(20) CHECK (content_type IN ('text', 'image', 'video')) NOT NULL,
+    cloudinary_public_id VARCHAR(255), -- Added directly here
+    likes_count INT DEFAULT 0,          -- Added for direct selection optimization
+    comments_count INT DEFAULT 0,       -- Added for direct selection optimization
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
@@ -89,10 +95,12 @@ CREATE TABLE stories (
     media_url VARCHAR(500),
     content_type VARCHAR(50) NOT NULL,
     content TEXT,
+    cloudinary_public_id VARCHAR(255), -- Added directly here
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP + INTERVAL '24 hours', -- Common practice for stories
+    expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP + INTERVAL '24 hours',
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
 
 -- -----------------------------------------------------
 -- 8. STORY_LIKES Table
@@ -151,6 +159,13 @@ CREATE TABLE messages (
 );
 
 -- Optional: Create indices for faster lookups on common foreign keys
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_comments_post_id ON comments(post_id);
+CREATE INDEX idx_likes_post_id_user_id ON likes(post_id, user_id);
+
+SELECT 'Database schema created successfully!' AS Status;
+
+
 CREATE INDEX idx_posts_user_id ON posts(user_id);
 CREATE INDEX idx_comments_post_id ON comments(post_id);
 CREATE INDEX idx_likes_post_id_user_id ON likes(post_id, user_id);

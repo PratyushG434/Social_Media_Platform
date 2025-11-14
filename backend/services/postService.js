@@ -5,12 +5,12 @@ const userExists = async (userId) => {
     return result.rows.length > 0;
 };
 
-exports.createPost = async (userId, content, media_url, content_type, public_id) => {
+exports.createPost = async (userId, content, media_url, content_type, cloudinary_public_id) => {
     const result = await db.query(
-        `INSERT INTO posts (user_id, content, media_url, content_type, cloudinary_public_id, cloudinary_public_id)
+        `INSERT INTO posts (user_id, content, media_url, content_type, cloudinary_public_id)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING post_id, user_id, content, media_url, content_type, cloudinary_public_id, timestamp;`,
-        [userId, content || null, media_url || null, content_type, public_id || null, cloudinary_public_id || null]
+        [userId, content || null, media_url || null, content_type, cloudinary_public_id || null]
     );
     return result.rows[0];
 };
@@ -199,13 +199,13 @@ exports.updatePost = async (postId, userId, updateData) => {
 
 exports.deletePost = async (postId, userId) => {
     const postOwnerResult = await db.query(
-        `SELECT user_id, cloudinary_public_id FROM posts WHERE post_id = $1;`, // <-- Select public_id
+        `SELECT user_id, cloudinary_public_id, content_type FROM posts WHERE post_id = $1;`,
         [postId]
     );
     const post = postOwnerResult.rows[0];
 
     if (!post) {
-        return false;
+        return null;
     }
     if (post.user_id !== userId) {
         throw new Error('Not authorized to delete this post.');
@@ -213,6 +213,9 @@ exports.deletePost = async (postId, userId) => {
 
     await db.query(`DELETE FROM posts WHERE post_id = $1;`, [postId]);
 
-    // Return the public_id so the controller can delete from Cloudinary
-    return { deleted: true, publicId: post.cloudinary_public_id };
+    return {
+        deleted: true,
+        publicId: post.cloudinary_public_id,
+        contentType: post.content_type
+    };
 };
