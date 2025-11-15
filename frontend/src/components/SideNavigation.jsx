@@ -2,9 +2,17 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import API from "../service/api"; // Ensure API is imported for logout
+import homeIcon from "../assets/icons/home.png";
+import compassIcon from "../assets/icons/compass.png";
+import reelIcon from "../assets/icons/reel.png";
+import messengerIcon from "../assets/icons/messenger.png";
+import bellIcon from "../assets/icons/bell.png";
+import userIcon from "../assets/icons/user.png";
+import settingsIcon from "../assets/icons/setting.png"
+import logoutIcon from "../assets/icons/logout.png"
 
 export default function SideNavigation() {
-  const { authUser, logout } = useAuthStore(); 
+  const { authUser, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -12,25 +20,31 @@ export default function SideNavigation() {
   const currentPage = parts[parts.length - 1] || "dashboard";
 
   const navItems = [
-    { id: "dashboard", label: "Home", icon: "🏠" },
-    { id: "explore", label: "Explore", icon: "🔍" },
-    { id: "videos", label: "Videos", icon: "🎥" },
-    { id: "shorts", label: "Shorts", icon: "⚡" },
-    // Profile navigates to the user's own profile path
-    { id: "profile", label: "Profile", icon: "👤", path: `/profile/${authUser?.user_id}` }, 
-    { id: "messages", label: "Messages", icon: "💬" },
-    { id: "notifications", label: "Notifications", icon: "🔔" },
+    { id: "dashboard", label: "Home", iconUrl: homeIcon },
+    { id: "explore", label: "Explore", iconUrl: compassIcon},
+    { id: "videos", label: "Videos", iconUrl: reelIcon },
+    // { id: "shorts", label: "Shorts", iconUrl: reelIcon },
+
+    {
+      id: "profile",
+      label: "Profile",
+      iconUrl: userIcon,
+      path: `/profile/${authUser?.user_id}`
+    },
+
+    { id: "messages", label: "Messages", iconUrl: messengerIcon },
+    { id: "notifications", label: "Notifications", iconUrl: bellIcon },
   ];
 
   const handleNav = (item) => {
     if (item.path) {
-        // Direct route for Profile
-        navigate(item.path);
+      // Direct route for Profile
+      navigate(item.path);
     } else if (item.id === "dashboard") {
-        navigate("/dashboard");
+      navigate("/dashboard");
     } else {
-        // Relative route for other dashboard tabs
-        navigate(`/dashboard/${item.id}`);
+      // Relative route for other dashboard tabs
+      navigate(`/dashboard/${item.id}`);
     }
   };
 
@@ -42,7 +56,7 @@ export default function SideNavigation() {
     } catch (err) {
       console.error("Logout failed", err);
       // Even if API fails, clear local state and redirect
-      await logout(); 
+      await logout();
       navigate("/login");
     }
   };
@@ -62,13 +76,16 @@ export default function SideNavigation() {
             key={item.id}
             // Use item.id for highlighting, use handleNav for navigation logic
             onClick={() => handleNav(item)}
-            className={`w-full flex items-center gap-4 px-6 py-3 text-left transition-all duration-200 ${
-              currentPage === item.id || (item.id === 'profile' && (location.pathname === item.path || currentPage === authUser?.user_id?.toString()))
+            className={`w-full flex items-center gap-4 px-6 py-3 text-left transition-all duration-200 ${currentPage === item.id || (item.id === 'profile' && (location.pathname === item.path || currentPage === authUser?.user_id?.toString()))
                 ? "bg-primary/10 text-primary border-r-2 border-primary"
                 : "text-card-foreground hover:bg-muted hover:text-primary"
-            }`}
+              }`}
           >
-            <span className="text-xl">{item.icon}</span>
+            <img
+              src={item.iconUrl}
+              alt={item.label}
+              className="w-5 h-5 object-contain"
+            />
             <span className="font-medium">{item.label}</span>
           </button>
         ))}
@@ -79,7 +96,11 @@ export default function SideNavigation() {
           onClick={() => navigate("/dashboard/settings")}
           className="w-full flex items-center gap-4 px-2 py-3 text-left text-card-foreground hover:bg-muted hover:text-primary transition-colors rounded-lg mb-2"
         >
-          <span className="text-xl">⚙️</span>
+          <img
+              src={settingsIcon}
+       
+              className="w-5 h-5 object-contain"
+            />
           <span className="font-medium">Settings</span>
         </button>
 
@@ -87,7 +108,11 @@ export default function SideNavigation() {
           onClick={handleLogout}
           className="w-full flex items-center gap-4 px-2 py-3 text-left text-destructive hover:bg-destructive/10 transition-colors rounded-lg"
         >
-          <span className="text-xl">🚪</span>
+          <img
+              src={logoutIcon}
+              
+              className="w-5 h-5 object-contain"
+            />
           <span className="font-medium">Logout</span>
         </button>
       </div>

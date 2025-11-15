@@ -14,6 +14,7 @@ router.post("/", protect, upload.single('content'), postController.createPost); 
 router.patch("/:id", protect, upload.single('content'), postController.updatePost);
 router.delete("/:id", protect, postController.deletePost);
 
+router.get('/shorts', postController.getVideoPosts);
 
 router.post("/:id/comments", protect, commentController.addComment);
 router.get('/:id/comments', commentController.getCommentsForPost);

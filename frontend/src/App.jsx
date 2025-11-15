@@ -8,6 +8,7 @@ import Dashboard from "./components/Dashboard"
 import { useAuthStore } from './store/useAuthStore'
 import Profile from "./components/Profile"
 import { Loader } from 'lucide-react'
+import PostDetail from "./components/postDetail"
 
 function App() {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -41,6 +42,12 @@ function App() {
           path="/dashboard/*"
           element={authUser ? <Dashboard /> : <Navigate to="/login" />}
         />
+
+        <Route 
+          path="/post/:postId" 
+          element={authUser ? <PostDetail /> : <Navigate to="/login" />} 
+        />
+
         
         {/* Profile routes require user to be logged in */}
         <Route 

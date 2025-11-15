@@ -125,12 +125,25 @@ export default function Explore() {
               <div
                 key={post.post_id} 
                 className="group relative aspect-square bg-card rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200"
+                onClick={() => navigate(`/post/${post.post_id}`)} // Redirect to PostDetail
               >
-                <img
-                  src={post.media_url || "/placeholder.svg"} 
-                  alt="Trending post"
-                  className="w-full h-full object-cover"
-                />
+                {/* --- VIDEO/IMAGE CHECK --- */}
+                {post.content_type === 'video' ? (
+                    <video 
+                        src={post.media_url} 
+                        muted 
+                        loop 
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <img
+                        src={post.media_url || "/placeholder.svg"} 
+                        alt="Trending post"
+                        className="w-full h-full object-cover"
+                    />
+                )}
+                {/* --- END VIDEO/IMAGE CHECK --- */}
+
 
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
@@ -149,7 +162,10 @@ export default function Explore() {
                 {/* User info */}
                 <div 
                     className="absolute bottom-3 left-3 flex items-center space-x-2 cursor-pointer"
-                    onClick={() => navigate(`/profile/${post.user_id}`)}
+                    onClick={(e) => {
+                        e.stopPropagation(); // Prevent navigating to post detail when clicking profile link
+                        navigate(`/profile/${post.user_id}`);
+                    }}
                 >
                   <Avatar
                     src={post.profile_pic_url}

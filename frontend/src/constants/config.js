@@ -38,6 +38,11 @@ export const SERVICE_URLS = {
   getHomeFeed: { url: "/posts/feed", method: "GET" }, // Following Feed
   getDiscoveryFeed: { url: "/posts", method: "GET" }, // Discovery/Explore Feed
   getLikedPosts: { url: "/posts/liked", method: "GET" },
+  getPostById: (postId) => ({
+    url: `/posts/${postId}`,
+    method: "GET",
+  }),
+
   toggleLike: (postId) => ({
     url: `/posts/${postId}/likes`,
     method: "POST",
@@ -50,6 +55,11 @@ export const SERVICE_URLS = {
   getComments: ({ postId }) => ({
     url: `posts/${postId}/comments`,
     method: "GET",
+  }),
+
+  deletePost: (postId) => ({
+    url: `/posts/${postId}`,
+    method: "DELETE",
   }),
 
   // USERS & PROFILE
@@ -99,6 +109,14 @@ export const SERVICE_URLS = {
     method: "GET",
   }),
 
+
   getUserChats: { url: "/chats", method: "GET" },
   PostUserChats: { url: "/chats", method: "POST" },
+
+  getUsersForSidebar: { url: "/chatlist", method: "GET" },
+
+  // NOTIFICATIONS (NEW)
+  getNotifications: { url: "/notifications", method: "GET" },
+  markNotificationsRead: { url: "/notifications/read", method: "PATCH" },
+
 };

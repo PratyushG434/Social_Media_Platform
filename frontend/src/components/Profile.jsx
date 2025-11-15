@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -7,6 +8,14 @@ import API from "../service/api";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import Avatar from "./Avatar";
+=======
+import { useEffect, useState, useCallback } from "react"
+import API from "../service/api"
+import { useAuthStore } from "../store/useAuthStore"
+import { useNavigate, useParams } from "react-router-dom"
+import Avatar from "./Avatar"; 
+import PostCard from "./PostCard"; 
+>>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
 
 export default function Profile() {
   const { userId: paramId } = useParams();
@@ -16,6 +25,7 @@ export default function Profile() {
   const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
+  const [viewMode, setViewMode] = useState("list"); // Default to list view
 
   const { authUser } = useAuthStore();
   const navigate = useNavigate();
@@ -51,6 +61,7 @@ export default function Profile() {
         : await API.getUserProfile({ userId: targetId });
 
       if (!response?.isSuccess) {
+<<<<<<< HEAD
         if (response?.code === 404) {
           throw new Error("User not found.");
         }
@@ -64,8 +75,26 @@ export default function Profile() {
         following: userFollowing,
       } = response.data;
 
+=======
+          if (response?.code === 404) {
+              return navigate('/404');
+          }
+          throw new Error("Failed to fetch user data.");
+      }
+
+      const userData = response.data.user || response.data;
+      const userPostsData = userData.posts || [];
+      const userFollowers = userData.followers || [];
+      const userFollowing = userData.following || [];
+      
+>>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
       setUser(userData);
-      setUserPosts(userPostsData || []);
+      
+      const postsWithLikeStatus = userPostsData.map(p => ({
+          ...p,
+          user_has_liked: p.user_has_liked || false 
+      }));
+      setUserPosts(postsWithLikeStatus);
 
       if (!isOwnProfile && authUser && userData) {
         const currentAuthUserId = authUser.user_id;
@@ -107,6 +136,7 @@ export default function Profile() {
 
     const targetUserId = user.user_id;
 
+<<<<<<< HEAD
     // optimistic UI
     setIsFollowing((prev) => !prev);
 
@@ -118,6 +148,18 @@ export default function Profile() {
         : [...prevFollowers, { user_id: authUser.user_id, username: authUser.username }];
 
       return { ...prevUser, followers: newFollowers };
+=======
+    setIsFollowing(prev => !prev);
+    
+    setUser(prevUser => {
+        if (!prevUser) return null;
+        // Basic state change for optimistic update on followers count (BE will confirm)
+        const currentFollowers = prevUser.followers || [];
+        const newFollowers = isFollowing 
+            ? currentFollowers.filter(f => f.user_id !== authUser.user_id) 
+            : [...currentFollowers, { user_id: authUser.user_id, username: authUser.username }];
+        return { ...prevUser, followers: newFollowers }; 
+>>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
     });
 
     try {
@@ -128,8 +170,12 @@ export default function Profile() {
       setIsFollowing(following);
     } catch (err) {
       console.error("Follow toggle error:", err);
+<<<<<<< HEAD
       // revert if failed
       setIsFollowing((prev) => !prev);
+=======
+      setIsFollowing(prev => !prev); // Revert on error
+>>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
     }
   }, [user, authUser, isFollowing]);
 
@@ -157,6 +203,23 @@ export default function Profile() {
     navigate("/dashboard/messages");
   };
 
+  const handleLikeToggle = (postId, currentlyLiked) => {
+    setUserPosts(prevPosts => prevPosts.map(p => {
+        if (p.post_id === postId) {
+            return {
+                ...p,
+                user_has_liked: !p.user_has_liked,
+                likes_count: p.user_has_liked ? p.likes_count - 1 : p.likes_count + 1,
+            };
+        }
+        return p;
+    }));
+    API.toggleLike(postId).catch(err => {
+        console.error("Failed to sync like with server:", err);
+    });
+  };
+
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center text-muted-foreground">
@@ -182,6 +245,60 @@ export default function Profile() {
     );
   }
 
+<<<<<<< HEAD
+=======
+  // --- Helper component for the Grid View (with Video Fix) ---
+  const GridView = ({ posts }) => (
+    <div className="grid grid-cols-3 gap-1">
+      {posts.filter(p => p.content_type !== 'text' && p.media_url).length > 0 ? (
+          posts.filter(p => p.content_type !== 'text' && p.media_url).map((post) => (
+              <div 
+                  key={post.post_id} 
+                  className="relative aspect-square group cursor-pointer"
+                  onClick={() => navigate(`/post/${post.post_id}`)}
+              >
+                  {post.content_type === 'video' ? (
+                      <video 
+                          src={post.media_url} 
+                          muted 
+                          loop 
+                          className="w-full h-full object-cover"
+                      />
+                  ) : (
+                      <img
+                        src={post.media_url || "/placeholder.svg"}
+                        alt="Post"
+                        className="w-full h-full object-cover"
+                      />
+                  )}
+              </div>
+          ))
+      ) : (
+        <p className="text-center text-muted-foreground py-8 col-span-full">No media posts yet.</p>
+      )}
+    </div>
+  );
+
+  // --- Helper component for the List View (using PostCard) ---
+  const ListView = ({ posts, onLikeToggle }) => (
+    <div className="space-y-4">
+      {posts.length > 0 ? (
+          posts.map((post) => (
+              <PostCard 
+                key={post.post_id} 
+                post={post} 
+                onLikeToggle={onLikeToggle} 
+              />
+          ))
+      ) : (
+        <p className="text-center text-muted-foreground py-8 col-span-full">No posts yet.</p>
+      )}
+    </div>
+  );
+  // --- END Helper Components ---
+
+
+>>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
@@ -317,9 +434,30 @@ export default function Profile() {
             </button>
           </div>
         </div>
-
-        {/* Posts Grid */}
+        
+        {/* View Mode Toggle */}
+        {activeTab === "posts" && userPosts.length > 0 && (
+            <div className="flex justify-end space-x-2 mb-4">
+                <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-2 rounded-full transition-colors ${viewMode === "list" ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}
+                    title="List View"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm0 2h6v12H7V4zM5 4H4v12h1V4zM15 4h1v12h-1V4z"/></svg>
+                </button>
+                <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-2 rounded-full transition-colors ${viewMode === "grid" ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}
+                    title="Grid View"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h4v4H5V5zm6 0h4v4h-4V5zm-6 6h4v4H5v-4zm6 0h4v4h-4v-4z"/></svg>
+                </button>
+            </div>
+        )}
+        
+        {/* Posts Content (Using View Modes) */}
         {activeTab === "posts" && (
+<<<<<<< HEAD
           <div className="grid grid-cols-3 gap-1">
             {userPosts.length > 0 ? (
               userPosts.map((post) => (
@@ -340,6 +478,18 @@ export default function Profile() {
               </p>
             )}
           </div>
+=======
+            <div className="flex flex-col">
+                {userPosts.length > 0 ? (
+                    <>
+                        {viewMode === "list" && <ListView posts={userPosts} onLikeToggle={handleLikeToggle} />}
+                        {viewMode === "grid" && <GridView posts={userPosts} />}
+                    </>
+                ) : (
+                    <p className="text-center text-muted-foreground py-8 col-span-full">No posts yet.</p>
+                )}
+            </div>
+>>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
         )}
 
         {activeTab === "tagged" && (
