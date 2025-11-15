@@ -8,7 +8,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import Avatar from "./Avatar";
 
-
+import PostCard from "./PostCard.jsx"
 
 
 export default function Profile() {

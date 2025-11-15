@@ -31,7 +31,12 @@ export default function SideNavigation() {
       iconUrl: userIcon,
       path: `/profile/${authUser?.user_id}`
     },
-
+     {
+      id: "Post-create",
+      label: "Post Create",
+      iconUrl: userIcon,
+     
+    },
     { id: "messages", label: "Messages", iconUrl: messengerIcon },
     { id: "notifications", label: "Notifications", iconUrl: bellIcon },
   ];
