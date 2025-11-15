@@ -18,7 +18,5 @@ router.get("/detail", protect, chatController.getChatDetails);
 
 // Route to get all messages for a specific chat
 router.get("/:chatId/messages", protect, chatController.getChatMessages);
-// Route to send a new message in a specific chat
-router.post("/:chatId/sendmessages", protect, chatController.sendMessage);
 
 module.exports = router;
