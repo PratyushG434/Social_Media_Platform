@@ -1,18 +1,19 @@
-"use client";
+"use client"
 
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import API from "../service/api";
 import { useAuthStore } from "../store/useAuthStore";
-import { useChatStore } from "../store/useChatStore";
 import Avatar from "./Avatar";
-import PostCard from "./PostCard.jsx";
+import PostCard from "./PostCard.jsx"
+import { useChatStore } from "../store/useChatStore"; // CRITICAL: Import Chat Store
+import { useNotifications } from "./Notification-system"; // CRITICAL: Import Notifications
+
 
 export default function Profile() {
   const { userId: paramId } = useParams();
-  const userId = paramId ? parseInt(paramId, 10) : null;
-
+  const userId = paramId ? parseInt(paramId, 10) : null; 
   const [user, setUser] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +24,10 @@ export default function Profile() {
   const { setSelectedUser } = useChatStore();
   const navigate = useNavigate();
 
-  // Own profile -> /dashboard/profile
-  // Other user profile -> /dashboard/profile/:userId
+  const { setTargetUserForChat } = useChatStore(); 
+  const { addNotification } = useNotifications();
+
+
   const isOwnProfile = !paramId || (authUser && authUser.user_id === userId);
 
   const [isFollowing, setIsFollowing] = useState(false);
@@ -195,7 +198,27 @@ export default function Profile() {
     });
   };
 
-  // --- Loading State ---
+
+  const handleMessageUser = () => {
+    if (!user || !authUser) {
+      addNotification({ type: 'warning', title: 'Login Required', message: 'You must be logged in to send messages.' });
+      return;
+    }
+    
+    if (user.user_id === authUser.user_id) {
+       addNotification({ type: 'warning', title: 'Self Chat', message: 'Cannot message yourself.' });
+       return;
+    }
+
+    // 1. Set the target user ID in the store
+    setTargetUserForChat(user.user_id);
+    
+    // 2. Navigate to the messages dashboard
+    navigate("/dashboard/messages");
+  };
+
+
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center text-muted-foreground">
@@ -222,7 +245,9 @@ export default function Profile() {
     );
   }
 
-  // --- Helper: Grid View ---
+  
+
+  // --- Helper component for the Grid View (with Video Fix) ---
   const GridView = ({ posts }) => (
     <div className="grid grid-cols-3 gap-1">
       {posts.filter((p) => p.content_type !== "text" && p.media_url).length >
@@ -369,9 +394,9 @@ export default function Profile() {
                       : "Follow"}
                   </button>
 
-                  <button
+                  <button 
+                    onClick={handleMessageUser} // CRITICAL: Binding the handler here
                     className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
-                    onClick={handleSendMessage}
                   >
                     Message
                   </button>

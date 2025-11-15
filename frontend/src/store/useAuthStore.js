@@ -17,22 +17,32 @@ export const useAuthStore = create((set, get) => ({
     set({ isCheckingAuth: true });
     try {
       const res = await API.checkAuth();
-      set({ authUser: res.data });
-      get().connectSocket();   // ✔ auto connect after refresh
+      if (res.isSuccess) {
+        set({ authUser: res.data });
+        // --- FIX: Connect socket AFTER auth is confirmed ---
+        get().connectSocket();
+      } else {
+        set({ authUser: null });
+        get().disconnectSocket(); // Disconnect if auth fails
+      }
     } catch (error) {
       set({ authUser: null });
+      get().disconnectSocket(); // Disconnect on error
     } finally {
       set({ isCheckingAuth: false });
     }
   },
 
   login: async (data) => {
+    // Note: The login API call happens in Login.jsx.
+    // This function is for setting the state after the API call succeeds.
     set({ isLoggingIn: true });
     try {
       set({ authUser: data });
-
-      // ⭐ MOST IMPORTANT
+      // --- FIX: Connect socket AFTER user data is set ---
       get().connectSocket();
+    } catch (error) {
+      console.log("error in set authuser in useauthstore");
     } finally {
       set({ isLoggingIn: false });
     }
@@ -42,26 +52,37 @@ export const useAuthStore = create((set, get) => ({
     try {
       await API.logout();
       set({ authUser: null });
-      get().disconnectSocket();
+      get().disconnectSocket(); // Disconnect socket after logout
     } catch (error) {}
   },
 
   connectSocket: () => {
-    const { authUser, socket } = get();
-    if (!authUser || socket?.connected) return;
+    const { authUser } = get();
+    // Prevent reconnecting if already connected
+    if (!authUser || get().socket?.connected) return;
 
-    const newSocket = io(BASE_URL, {
-      query: { userId: authUser.user_id }, // ⭐ backend expects user_id
+    const socket = io(BASE_URL, {
+      withCredentials: true, // This ensures cookies are sent with the handshake
+      reconnectionAttempts: 5,
     });
 
-    set({ socket: newSocket });
-
-    newSocket.on("getOnlineUsers", (online) => {
-      set({ onlineUsers: online });
+    socket.on("connect", () => {
+      console.log("Socket connected successfully:", socket.id);
     });
+
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+    });
+
+    set({ socket: socket });
   },
 
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    const socket = get().socket;
+    if (socket?.connected) {
+      socket.disconnect();
+      set({ socket: null });
+      console.log("Socket disconnected.");
+    }
   },
 }));

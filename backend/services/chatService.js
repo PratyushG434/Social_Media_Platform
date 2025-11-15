@@ -1,56 +1,54 @@
-const db = require('../db/db');
+// backend/services/chatService.js
 
+const db = require("../db/db");
 
 // Creates a new chat entry between two users, or returns an existing one.
 exports.createOrGetChat = async (requesterId, targetUserId) => {
-    if (requesterId === targetUserId) {
-        throw new Error('Cannot start a chat with yourself.');
-    }
+  if (requesterId === targetUserId) {
+    throw new Error("Cannot start a chat with yourself.");
+  }
 
-    const user1_id = Math.min(requesterId, targetUserId);
-    const user2_id = Math.max(requesterId, targetUserId);
+  const user1_id = Math.min(requesterId, targetUserId);
+  const user2_id = Math.max(requesterId, targetUserId);
 
-    try {
-        const existingChatResult = await db.query(
-            `SELECT chat_id, user1_id, user2_id, status, created_at
+  try {
+    const existingChatResult = await db.query(
+      `SELECT chat_id, user1_id, user2_id, status, created_at
              FROM chats
              WHERE user1_id = $1 AND user2_id = $2;`,
-            [user1_id, user2_id]
-        );
+      [user1_id, user2_id]
+    );
 
-        if (existingChatResult.rows.length > 0) {
-            return {
-                chat: existingChatResult.rows[0],
-                created: false
-            };
-        } else {
-            const newChatResult = await db.query(
-                `INSERT INTO chats (user1_id, user2_id, status)
+    if (existingChatResult.rows.length > 0) {
+      return {
+        chat: existingChatResult.rows[0],
+        created: false,
+      };
+    } else {
+      const newChatResult = await db.query(
+        `INSERT INTO chats (user1_id, user2_id, status)
                  VALUES ($1, $2, 'Active')
                  RETURNING chat_id, user1_id, user2_id, status, created_at;`,
-                [user1_id, user2_id]
-            );
-            return {
-                chat: newChatResult.rows[0],
-                created: true
-            };
-        }
-
-    } catch (error) {
-        console.error('Error in createOrGetChat service:', error);
-        if (error.code === '23505') {
-            throw new Error('Chat already exists (unique constraint violation).');
-        }
-        throw new Error('Database error creating or getting chat.');
+        [user1_id, user2_id]
+      );
+      return {
+        chat: newChatResult.rows[0],
+        created: true,
+      };
     }
+  } catch (error) {
+    console.error("Error in createOrGetChat service:", error);
+    if (error.code === "23505") {
+      throw new Error("Chat already exists (unique constraint violation).");
+    }
+    throw new Error("Database error creating or getting chat.");
+  }
 };
 
-
-// Service function to get all chats for a specific user.
+// Service function to get all chats for a specific user. (Modified to include chats without messages)
 exports.getUserChats = async (userId) => {
-     
-    const result = await db.query(
-        `SELECT
+  const result = await db.query(
+    `SELECT
             c.chat_id,
             c.user1_id,
             c.user2_id,
@@ -73,12 +71,19 @@ exports.getUserChats = async (userId) => {
                 ELSE c.user1_id
              END) = ou.user_id
          WHERE (c.user1_id = $1 OR c.user2_id = $1) -- Filter chats where this user is a participant
-           AND EXISTS (
-                SELECT 1 FROM messages m WHERE m.chat_id = c.chat_id -- NEW: Only include chats with messages
-           )
-         ORDER BY c.created_at DESC;`, 
-        [userId]
-    );
+         ORDER BY c.created_at DESC;`,
+    [userId]
+  );
 
-    return result.rows;
+  return result.rows;
+};
+
+// Service function to get a chat by ID and ensure user is a participant.
+exports.getChatById = async (chatId, userId) => {
+  const result = await db.query(
+    `SELECT chat_id, user1_id, user2_id, status, created_at FROM chats 
+         WHERE chat_id = $1 AND (user1_id = $2 OR user2_id = $2);`,
+    [chatId, userId]
+  );
+  return result.rows[0] || null;
 };

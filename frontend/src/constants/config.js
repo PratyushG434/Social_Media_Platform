@@ -63,7 +63,7 @@ export const SERVICE_URLS = {
   }),
 
   // USERS & PROFILE
-  searchUsers: ({searchQuery}) => ({
+  searchUsers: ({ searchQuery }) => ({
     url: "/users/search",
     method: "GET",
     params: { q: searchQuery },
@@ -102,21 +102,28 @@ export const SERVICE_URLS = {
     data: { reaction },
   }),
 
-  // CHAT/MESSAGES (Placeholders)
-  
-  getMessages : ( chat_id) => ({
-    url: `/chats/${chat_id}/messages`,
+  // CHAT/MESSAGES
+
+  createChat: ({ targetUserId }) => ({
+    url: "/chats",
+    method: "POST",
+    data: { targetUserId },
+  }),
+  getUserChats: { url: "/chats", method: "GET" },
+
+  // Using query parameters for chat details
+  getChatDetails: (chatId) => ({
+    url: `/chats/detail`,
     method: "GET",
+    params: { chatId: chatId },
   }),
 
-
-  getUserChats: { url: "/chats", method: "GET" },
-  PostUserChats: { url: "/chats", method: "POST" },
-
-  getUsersForSidebar: { url: "/chatlist", method: "GET" },
+  getChatMessages: (chatId) => ({
+    url: `/chats/${chatId}/messages`,
+    method: "GET",
+  }),
 
   // NOTIFICATIONS (NEW)
   getNotifications: { url: "/notifications", method: "GET" },
   markNotificationsRead: { url: "/notifications/read", method: "PATCH" },
-
 };
