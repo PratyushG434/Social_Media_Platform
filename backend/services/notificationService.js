@@ -8,8 +8,21 @@ exports.createNotification = async (
   postId = null,
   storyId = null
 ) => {
-  // Prevent self-notification
-  if (recipientId === senderId && type !== "admin") return;
+  if (recipientId === senderId) return;
+
+  // --- FIX: Prevent duplicate 'like' notifications ---
+  if (type === "like" && postId) {
+    const existingLikeNotification = await db.query(
+      `SELECT 1 FROM notifications 
+             WHERE recipient_id = $1 AND sender_id = $2 AND post_id = $3 AND type = 'like'`,
+      [recipientId, senderId, postId]
+    );
+    // If a notification for this like already exists, do not create another one.
+    if (existingLikeNotification.rows.length > 0) {
+      return;
+    }
+  }
+  // --- END FIX ---
 
   try {
     const result = await db.query(
@@ -40,8 +53,13 @@ exports.getNotificationsByRecipientId = async (recipientId) => {
             u.username AS sender_username,
             u.display_name AS sender_display_name,
             u.profile_pic_url AS sender_profile_pic_url,
-            -- Related post preview (optional)
-            p.media_url AS post_media_url
+            
+            -- FIX: Generate thumbnail for video posts using Cloudinary URL transformation
+            CASE
+                WHEN p.content_type = 'video' THEN REPLACE(p.media_url, '.mp4', '.jpg')
+                ELSE p.media_url
+            END AS post_media_url
+            
          FROM notifications n
          LEFT JOIN users u ON n.sender_id = u.user_id
          LEFT JOIN posts p ON n.post_id = p.post_id
