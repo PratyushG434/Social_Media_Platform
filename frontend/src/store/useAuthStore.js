@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import API from "../service/api";
-
 import { io } from "socket.io-client";
 
 const BASE_URL = "http://localhost:8000";
@@ -19,26 +18,33 @@ export const useAuthStore = create((set, get) => ({
 
     try {
       const res = await API.checkAuth();
-      set({ authUser: res.data });
+      if (res.isSuccess) {
+        set({ authUser: res.data });
+        // --- FIX: Connect socket AFTER auth is confirmed ---
+        get().connectSocket();
+      } else {
+        set({ authUser: null });
+        get().disconnectSocket(); // Disconnect if auth fails
+      }
     } catch (error) {
       console.log("Error in checkAuth:", error);
       set({ authUser: null });
-      set({ isCheckingAuth: false }); 
-
+      get().disconnectSocket(); // Disconnect on error
     } finally {
       set({ isCheckingAuth: false });
     }
   },
 
   login: async (data) => {
+    // Note: The login API call happens in Login.jsx.
+    // This function is for setting the state after the API call succeeds.
     set({ isLoggingIn: true });
     try {
-      set({ authUser: data }); // this saves the logged-in user
-      console.log(get().authUser, " from useAuthStore after setting");
-
-      // get().connectSocket(); // if you implement sockets later
+      set({ authUser: data });
+      // --- FIX: Connect socket AFTER user data is set ---
+      get().connectSocket();
     } catch (error) {
-      console.log("error in set authuser in useauthsotre");
+      console.log("error in set authuser in useauthstore");
     } finally {
       set({ isLoggingIn: false });
     }
@@ -46,31 +52,39 @@ export const useAuthStore = create((set, get) => ({
 
   logout: async () => {
     try {
-      const response = await API.logout();
+      await API.logout();
       set({ authUser: null });
-
-      // get().disconnectSocket();
+      get().disconnectSocket(); // Disconnect socket after logout
     } catch (error) {}
   },
 
-  //   connectSocket: () => {
-  //     const { authUser } = get();
-  //     if (!authUser || get().socket?.connected) return;
+  connectSocket: () => {
+    const { authUser } = get();
+    // Prevent reconnecting if already connected
+    if (!authUser || get().socket?.connected) return;
 
-  //     const socket = io(BASE_URL, {
-  //       query: {
-  //         userId: authUser._id,
-  //       },
-  //     });
-  //     socket.connect();
+    const socket = io(BASE_URL, {
+      withCredentials: true, // This ensures cookies are sent with the handshake
+      reconnectionAttempts: 5,
+    });
 
-  //     set({ socket: socket });
+    socket.on("connect", () => {
+      console.log("Socket connected successfully:", socket.id);
+    });
 
-  //     socket.on("getOnlineUsers", (userIds) => {
-  //       set({ onlineUsers: userIds });
-  //     });
-  //   },
-  //   disconnectSocket: () => {
-  //     if (get().socket?.connected) get().socket.disconnect();
-  //   },
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+    });
+
+    set({ socket: socket });
+  },
+
+  disconnectSocket: () => {
+    const socket = get().socket;
+    if (socket?.connected) {
+      socket.disconnect();
+      set({ socket: null });
+      console.log("Socket disconnected.");
+    }
+  },
 }));

@@ -6,11 +6,13 @@ import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate, useParams } from "react-router-dom"
 import Avatar from "./Avatar"; 
 import PostCard from "./PostCard"; 
+import { useChatStore } from "../store/useChatStore"; // CRITICAL: Import Chat Store
+import { useNotifications } from "./Notification-system"; // CRITICAL: Import Notifications
+
 
 export default function Profile() {
   const { userId: paramId } = useParams();
   const userId = paramId ? parseInt(paramId, 10) : null; 
-
   const [user, setUser] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +21,10 @@ export default function Profile() {
 
   const { authUser } = useAuthStore();
   const navigate = useNavigate();
+
+  const { setTargetUserForChat } = useChatStore(); 
+  const { addNotification } = useNotifications();
+
 
   const isOwnProfile = !paramId || (authUser && authUser.user_id === userId);
 
@@ -149,6 +155,26 @@ export default function Profile() {
   };
 
 
+  const handleMessageUser = () => {
+    if (!user || !authUser) {
+      addNotification({ type: 'warning', title: 'Login Required', message: 'You must be logged in to send messages.' });
+      return;
+    }
+    
+    if (user.user_id === authUser.user_id) {
+       addNotification({ type: 'warning', title: 'Self Chat', message: 'Cannot message yourself.' });
+       return;
+    }
+
+    // 1. Set the target user ID in the store
+    setTargetUserForChat(user.user_id);
+    
+    // 2. Navigate to the messages dashboard
+    navigate("/dashboard/messages");
+  };
+
+
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center text-muted-foreground">
@@ -171,6 +197,8 @@ export default function Profile() {
       </div>
     );
   }
+
+  
 
   // --- Helper component for the Grid View (with Video Fix) ---
   const GridView = ({ posts }) => (
@@ -310,7 +338,10 @@ export default function Profile() {
                         : "Follow"}
                   </button>
 
-                  <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
+                  <button 
+                    onClick={handleMessageUser} // CRITICAL: Binding the handler here
+                    className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                  >
                     Message
                   </button>
                 </>

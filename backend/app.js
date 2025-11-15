@@ -16,11 +16,10 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-const server = http.createServer(app); // --- NEW: Create HTTP server from Express app ---
+const server = http.createServer(app);
 const io = new Server(server, {
-  // --- NEW: Initialize Socket.IO server ---
   cors: {
-    origin: "http://localhost:3000", // IMPORTANT: This MUST match your frontend's actual origin
+    origin: "http://localhost:3000",
     credentials: true,
   },
 });
@@ -70,19 +69,16 @@ app.use("/api/notifications", notificationRoutes);
 
 require("./utils/cleanUpStories.js");
 
-// --- NEW: Socket.IO Authentication and Handlers ---
+// --- Socket.IO Authentication and Handlers ---
 const { authenticateSocket } = require("./middleware/socketAuth");
 const { registerChatHandlers } = require("./socket/socketHandler");
 
-// Use socket authentication middleware
 io.use(authenticateSocket);
 
-// Register Socket.IO event handlers
 io.on("connection", (socket) => {
   console.log(
     `Socket connected: ${socket.id} for user ${socket.user.username}`
   );
-  // Pass the io instance and the connected socket to the handler
   registerChatHandlers(io, socket);
 
   socket.on("disconnect", () => {
@@ -92,7 +88,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n======================================`);
   console.log(`Server is running on port: ${PORT}`);
   console.log(`Access at: http://localhost:${PORT}`);

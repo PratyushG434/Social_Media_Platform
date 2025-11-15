@@ -102,13 +102,26 @@ export const SERVICE_URLS = {
     data: { reaction },
   }),
 
-  // CHAT/MESSAGES (Placeholders)
-  sendMessage: ({ id, text, image }) => ({
-    url: `/send/${id}`,
+  // CHAT/MESSAGES
+
+  createChat: ({ targetUserId }) => ({
+    url: "/chats",
     method: "POST",
-    data: { text, image },
+    data: { targetUserId },
   }),
-  getUsersForSidebar: { url: "/chatlist", method: "GET" },
+  getUserChats: { url: "/chats", method: "GET" },
+
+  // Using query parameters for chat details
+  getChatDetails: (chatId) => ({
+    url: `/chats/detail`,
+    method: "GET",
+    params: { chatId: chatId },
+  }),
+
+  getChatMessages: (chatId) => ({
+    url: `/chats/${chatId}/messages`,
+    method: "GET",
+  }),
 
   // NOTIFICATIONS (NEW)
   getNotifications: { url: "/notifications", method: "GET" },
