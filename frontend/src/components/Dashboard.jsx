@@ -11,7 +11,7 @@ import Settings from "./Settings"
 import StoryViewer from "./StoryViewer"
 import StoryCreate from "./StoryCreate"
 import Videos from "./Videos"
-import Shorts from "./Shorts"
+// import Shorts from "./Shorts"
 import Explore from "./Explore"
 
 export default function Dashboard() {
@@ -27,7 +27,7 @@ export default function Dashboard() {
           <Route path="/" element={<Feed />} />
           <Route path="explore" element={<Explore />} />
           <Route path="videos" element={<Videos />} />
-          <Route path="shorts" element={<Shorts />} />
+          {/* <Route path="shorts" element={<Shorts />} /> */}
           <Route path="messages" element={<Messages />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
