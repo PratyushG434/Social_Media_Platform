@@ -5,7 +5,7 @@ import API from "../service/api"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate, useParams } from "react-router-dom"
 import Avatar from "./Avatar"; 
-import PostCard from "./PostCard"; // --- NEW: Import PostCard ---
+import PostCard from "./PostCard"; 
 
 export default function Profile() {
   const { userId: paramId } = useParams();
@@ -15,9 +15,7 @@ export default function Profile() {
   const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
-  // --- NEW: View Mode State (Defaulting to list for all posts) ---
-  const [viewMode, setViewMode] = useState("list"); 
-  // --- END NEW ---
+  const [viewMode, setViewMode] = useState("list"); // Default to list view
 
   const { authUser } = useAuthStore();
   const navigate = useNavigate();
@@ -50,14 +48,11 @@ export default function Profile() {
       
       if (!response?.isSuccess) {
           if (response?.code === 404) {
-              throw new Error("User not found.");
+              return navigate('/404');
           }
           throw new Error("Failed to fetch user data.");
       }
 
-      // --- FIX: Correct data structure extraction ---
-      // When fetching profile, the BE wraps posts/followers/following inside the 'user' object.
-      // We need to handle both structures depending on the BE implementation.
       const userData = response.data.user || response.data;
       const userPostsData = userData.posts || [];
       const userFollowers = userData.followers || [];
@@ -65,14 +60,11 @@ export default function Profile() {
       
       setUser(userData);
       
-      // Ensure post objects have default like status for PostCard reuse
       const postsWithLikeStatus = userPostsData.map(p => ({
           ...p,
           user_has_liked: p.user_has_liked || false 
       }));
       setUserPosts(postsWithLikeStatus);
-      // --- END FIX ---
-
 
       if (!isOwnProfile && authUser && userData) {
           const currentAuthUserId = authUser.user_id;
@@ -111,16 +103,19 @@ export default function Profile() {
 
   const handleFollowToggle = useCallback(async () => {
     if (!user || !authUser) return; 
-    // ... (existing handleFollowToggle logic)
+
     const targetUserId = user.user_id;
 
     setIsFollowing(prev => !prev);
     
     setUser(prevUser => {
         if (!prevUser) return null;
-        // The BE logic handles updating follower counts, we skip complex local state updates here for brevity 
-        // in favor of simplicity, relying on a full re-fetch if necessary.
-        return prevUser; 
+        // Basic state change for optimistic update on followers count (BE will confirm)
+        const currentFollowers = prevUser.followers || [];
+        const newFollowers = isFollowing 
+            ? currentFollowers.filter(f => f.user_id !== authUser.user_id) 
+            : [...currentFollowers, { user_id: authUser.user_id, username: authUser.username }];
+        return { ...prevUser, followers: newFollowers }; 
     });
 
     try {
@@ -132,14 +127,12 @@ export default function Profile() {
 
     } catch (err) {
       console.error("Follow toggle error:", err);
-      setIsFollowing(prev => !prev);
+      setIsFollowing(prev => !prev); // Revert on error
     }
   }, [user, authUser, isFollowing]);
 
 
-  // --- NEW: PostCard requires an onLikeToggle handler ---
   const handleLikeToggle = (postId, currentlyLiked) => {
-    // Optimistically update the local posts state
     setUserPosts(prevPosts => prevPosts.map(p => {
         if (p.post_id === postId) {
             return {
@@ -150,13 +143,10 @@ export default function Profile() {
         }
         return p;
     }));
-
-    // Send API request 
     API.toggleLike(postId).catch(err => {
         console.error("Failed to sync like with server:", err);
     });
   };
-  // --- END NEW ---
 
 
   if (loading) {
@@ -182,21 +172,30 @@ export default function Profile() {
     );
   }
 
-  // --- NEW: Helper Components for View Modes ---
+  // --- Helper component for the Grid View (with Video Fix) ---
   const GridView = ({ posts }) => (
     <div className="grid grid-cols-3 gap-1">
-      {posts.filter(p => p.content_type !== 'text').length > 0 ? (
-          posts.filter(p => p.content_type !== 'text').map((post) => (
+      {posts.filter(p => p.content_type !== 'text' && p.media_url).length > 0 ? (
+          posts.filter(p => p.content_type !== 'text' && p.media_url).map((post) => (
               <div 
                   key={post.post_id} 
                   className="relative aspect-square group cursor-pointer"
                   onClick={() => navigate(`/post/${post.post_id}`)}
               >
-                  <img
-                    src={post.media_url || "/placeholder.svg"}
-                    alt="Post"
-                    className="w-full h-full object-cover"
-                  />
+                  {post.content_type === 'video' ? (
+                      <video 
+                          src={post.media_url} 
+                          muted 
+                          loop 
+                          className="w-full h-full object-cover"
+                      />
+                  ) : (
+                      <img
+                        src={post.media_url || "/placeholder.svg"}
+                        alt="Post"
+                        className="w-full h-full object-cover"
+                      />
+                  )}
               </div>
           ))
       ) : (
@@ -205,6 +204,7 @@ export default function Profile() {
     </div>
   );
 
+  // --- Helper component for the List View (using PostCard) ---
   const ListView = ({ posts, onLikeToggle }) => (
     <div className="space-y-4">
       {posts.length > 0 ? (
@@ -220,7 +220,7 @@ export default function Profile() {
       )}
     </div>
   );
-  // --- END NEW ---
+  // --- END Helper Components ---
 
 
   return (
@@ -344,7 +344,7 @@ export default function Profile() {
           </div>
         </div>
         
-        {/* --- NEW: View Mode Toggle --- */}
+        {/* View Mode Toggle */}
         {activeTab === "posts" && userPosts.length > 0 && (
             <div className="flex justify-end space-x-2 mb-4">
                 <button
@@ -363,10 +363,8 @@ export default function Profile() {
                 </button>
             </div>
         )}
-        {/* --- END NEW --- */}
-
-
-        {/* Posts Content (Modified to use View Modes) */}
+        
+        {/* Posts Content (Using View Modes) */}
         {activeTab === "posts" && (
             <div className="flex flex-col">
                 {userPosts.length > 0 ? (

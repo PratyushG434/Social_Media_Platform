@@ -82,6 +82,23 @@ exports.getFollowingPostsFeed = async (req, res) => {
 };
 
 
+exports.getVideoPosts = async (req, res) => {
+  try {
+      const videoPosts = await postService.getVideoPosts();
+
+      res.status(200).json({
+          message: 'Video posts fetched successfully!',
+          posts: videoPosts
+      });
+
+  } catch (error) {
+      console.error('Error fetching video posts:', error);
+      res.status(500).json({ message: 'Server error fetching video posts.' });
+  }
+};
+
+
+
 exports.getPostById = async (req, res) => {
   const { id: postId } = req.params;
 

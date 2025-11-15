@@ -79,6 +79,28 @@ exports.getFollowingPostsFeed = async (currentUserId) => {
 };
 
 
+exports.getVideoPosts = async () => {
+    const result = await db.query(
+        `SELECT
+            p.post_id,
+            p.content,
+            p.media_url,
+            p.content_type,
+            p.timestamp,
+            p.user_id,
+            u.username,
+            u.display_name,
+            u.profile_pic_url,
+            p.cloudinary_public_id,
+            p.likes_count,
+            p.comments_count
+         FROM posts p
+         JOIN users u ON p.user_id = u.user_id
+         WHERE p.content_type = 'video' -- NEW: Filter by content_type
+         ORDER BY p.timestamp DESC;`
+    );
+    return result.rows;
+};
 
 
 exports.getPostById = async (postId) => {
