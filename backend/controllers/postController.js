@@ -189,3 +189,18 @@ exports.deletePost = async (req, res) => {
   }
 };
 
+
+
+exports.getLikedPosts = async (req, res) => {
+    try {
+        const currentUserId = req.user.user_id;
+        const likedPosts = await postService.getLikedPosts(currentUserId);
+        res.status(200).json({
+            message: 'Liked posts fetched successfully!',
+            posts: likedPosts
+        });
+    } catch (error) {
+        console.error('Error fetching liked posts:', error);
+        res.status(500).json({ message: 'Server error fetching liked posts.' });
+    }
+};

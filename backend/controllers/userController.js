@@ -27,19 +27,24 @@ exports.getMe = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const user = await userService.getUserById(userId);
-        const followers = await getFollowers(userId);
-        const following = await getFollowing(userId);
-        const posts = await getPostsByUserId(userId);
+        
         if (!user) {
             return res.status(404).json({ message: 'User not found.' });
         }
-
-        res.status(200).json({
-            message: 'User profile fetched successfully.',
-            user: user,
+        
+        const followers = await getFollowers(userId);
+        const following = await getFollowing(userId);
+        const posts = await getPostsByUserId(userId);
+        const userProfileData = {
+            ...user, 
             posts: posts,
             followers: followers,
             following: following
+        };
+
+        res.status(200).json({
+            message: 'User profile fetched successfully.',
+            user: userProfileData
         });
 
     } catch (error) {
@@ -49,8 +54,9 @@ exports.getMe = async (req, res) => {
 };
 
 
+
 exports.getUserProfile = async (req, res) => {
-    const { userId } = req.params; // Get the user ID from URL params
+    const { userId } = req.params; 
 
     try {
         const id = parseInt(userId);
@@ -60,28 +66,32 @@ exports.getUserProfile = async (req, res) => {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Fetch followers and following
+        // Fetch all related data
         const followers = await getFollowers(id);
         const following = await getFollowing(id);
         const posts = await getPostsByUserId(id);
 
+        // --- FIX 2: Standardize Response for /:userId ---
+        // Combine all related data directly into the user object
+        const userProfileData = {
+            user_id: user.user_id,
+            username: user.username,
+            email: user.email,
+            display_name: user.display_name,
+            bio: user.bio,
+            profile_pic_url: user.profile_pic_url,
+            dob: user.dob,
+            gender: user.gender,
+            join_date: user.join_date,
+            acc_status: user.acc_status,
+            followers: followers,   
+            following: following,    
+            posts: posts           
+        };
+
         res.status(200).json({
             message: 'User profile fetched successfully.',
-            user: {
-                user_id: user.user_id,
-                username: user.username,
-                email: user.email,
-                display_name: user.display_name,
-                bio: user.bio,
-                profile_pic_url: user.profile_pic_url,
-                dob: user.dob,
-                gender: user.gender,
-                join_date: user.join_date,
-                acc_status: user.acc_status,
-                followers: followers,   // list of follower users
-                following: following,    // list of following users
-                posts: posts           // all the user posts
-            }
+            user: userProfileData
         });
 
     } catch (error) {
@@ -89,6 +99,7 @@ exports.getUserProfile = async (req, res) => {
         res.status(500).json({ message: 'Server error fetching user profile.' });
     }
 };
+
 
 
 
@@ -198,13 +209,19 @@ exports.changeMyPassword = async (req, res) => {
 
 
 exports.checkAuth = async (req, res) => {
-    try {
-        res.status(200).json(req.user);
-    } catch (error) {
-        console.log("Error in checkAuth controller", error.message);
-        res.status(500).json({ message: "Internal Server Error" });
+  try {
+    const fullUser = await userService.getUserById(req.user.user_id);
+    if (!fullUser) {
+        return res.status(404).json({ message: 'User from token not found.' });
     }
+    res.status(200).json(fullUser);
+
+  } catch (error) {
+    console.log("Error in checkAuth controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
+
 
 
 exports.getSuggestedUsers = async (req, res) => {

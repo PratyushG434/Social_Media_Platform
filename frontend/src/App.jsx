@@ -1,23 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate, BrowserRouter } from "react-router-dom"
+import { useEffect } from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import Login from "./components/Login"
 import Register from "./components/Register"
 import Dashboard from "./components/Dashboard"
 import { useAuthStore } from './store/useAuthStore'
 import Profile from "./components/Profile"
 import { Loader } from 'lucide-react'
-function App() {
-  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
 
-  // console.log({ onlineUsers }, " online user from app.jsx");
-  console.log(authUser);
+function App() {
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
+  // FIX: Show loader while checking auth status to prevent premature redirect
   if (isCheckingAuth) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
@@ -26,45 +25,40 @@ function App() {
     );
   }
 
-
-
-
   return (
-    <>
-
-      <Router>
-        <Routes>
-          <Route
-            path="/login"
-            element={authUser ? <Navigate to="/dashboard" /> : <Login />}
-          />
-          <Route
-            path="/register"
-            element={authUser ? <Navigate to="/dashboard" /> : <Register />}
-          />
-          <Route
-            path="/dashboard/*"
-            element={
-              authUser ? (
-                <Dashboard />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
+    <Router>
+      <Routes>
+        <Route
+          path="/login"
+          element={authUser ? <Navigate to="/dashboard" /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={authUser ? <Navigate to="/dashboard" /> : <Register />}
+        />
         
-
-       
-          <Route path="/profile" element={<Profile />} />
-
-
-          <Route path="/profile/:userId" element={<Profile />} />
-
-          <Route path="/" element={<Navigate to={authUser ? "/dashboard" : "/login"} />} />
-        </Routes>
-      </Router>
-
-    </>
+        <Route
+          path="/dashboard/*"
+          element={authUser ? <Dashboard /> : <Navigate to="/login" />}
+        />
+        
+        {/* Profile routes require user to be logged in */}
+        <Route 
+          path="/profile/:userId" 
+          element={authUser ? <Profile /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/profile" 
+          element={authUser ? <Profile /> : <Navigate to="/login" />} 
+        />
+        
+        {/* Default route */}
+        <Route 
+          path="/" 
+          element={<Navigate to={authUser ? "/dashboard" : "/login"} />} 
+        />
+      </Routes>
+    </Router>
   )
 }
 

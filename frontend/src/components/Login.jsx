@@ -11,44 +11,45 @@ import { NotificationProvider , useNotifications } from "./Notification-system";
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const navigate = useNavigate();
-  const { login, isLoggingIn , authUser } = useAuthStore();
+  const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
    const { addNotification } = useNotifications();
+   
   const handleSubmit = async(e) => {
     e.preventDefault()
-    
+    setIsLoading(true);
+    setError("");
+
     try {
-    
       const response = await API.loginUser({
-      email: email,
-      password : password,
-    });
-      const mongoUser = response.data.user;
-     console.log(mongoUser , ' user from loginpage')
-    //  send data to authstore
-     await login(mongoUser);  
+        email: email,
+        password : password,
+      });
+      
+      const user = response.data.user;
+      await login(user);  
 
-     addNotification({
-      type: "success",
-      title: "Welcome to streamsocial!",
-      message: "Successfully signed in. Redirecting to dashboard...",
-    });
-  
-      setIsLoading(false);
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 1500);
-  } catch ( err ) {
+      addNotification({
+        type: "success",
+        title: "Welcome to streamsocial!",
+        message: "Successfully signed in. Redirecting to dashboard...",
+      });
     
-    addNotification({
-      type: "error",
-      title: "Authentication Failed",
-      message: err.message,
-    });
-  
-   } 
-    
-
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 500); // Shorter delay for better UX
+    } catch ( err ) {
+      
+      const message = err.response?.data?.message || err.message || "Login failed.";
+      setError(message);
+      addNotification({
+        type: "error",
+        title: "Authentication Failed",
+        message: message,
+      });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -95,17 +96,12 @@ import { NotificationProvider , useNotifications } from "./Notification-system";
 
             <button
               type="submit"
-              className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              Login
+              {isLoading ? "Logging In..." : "Login"}
             </button>
 
-            {/* <button
-              type="button"
-              className="w-full bg-secondary text-secondary-foreground py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors"
-            >
-              Login with Google
-            </button> */}
           </form>
 
           <div className="mt-6 text-center space-y-2">
