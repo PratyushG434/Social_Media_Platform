@@ -23,7 +23,7 @@ export default function SideNavigation() {
     { id: "dashboard", label: "Home", iconUrl: homeIcon },
     { id: "explore", label: "Explore", iconUrl: compassIcon},
     { id: "videos", label: "Videos", iconUrl: reelIcon },
-    { id: "shorts", label: "Shorts", iconUrl: reelIcon },
+    // { id: "shorts", label: "Shorts", iconUrl: reelIcon },
 
     {
       id: "profile",

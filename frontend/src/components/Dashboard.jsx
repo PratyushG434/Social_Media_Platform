@@ -11,9 +11,9 @@ import Settings from "./Settings"
 import StoryViewer from "./StoryViewer"
 import StoryCreate from "./StoryCreate"
 import Videos from "./Videos"
-import Shorts from "./Shorts"
+// import Shorts from "./Shorts"
 import Explore from "./Explore"
-
+import ChatPage from "./Chat"
 export default function Dashboard() {
   const navigate = useNavigate()
 
@@ -27,8 +27,13 @@ export default function Dashboard() {
           <Route path="/" element={<Feed />} />
           <Route path="explore" element={<Explore />} />
           <Route path="videos" element={<Videos />} />
+<<<<<<< HEAD
           <Route path="shorts" element={<Shorts />} />
+          <Route path="messages" element={<ChatPage />} />
+=======
+          {/* <Route path="shorts" element={<Shorts />} /> */}
           <Route path="messages" element={<Messages />} />
+>>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
           

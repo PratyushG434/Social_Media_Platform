@@ -1,117 +1,106 @@
+// useChatStore.jsx
 import { create } from "zustand";
-
 import API from "../service/api";
 import { useAuthStore } from "./useAuthStore";
 
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
-  newUsers: [],
-  recentUsers: [],
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  _messageListener: null,
 
-    getUsers: async () => {
+  // GET LIST OF CHATS
+  getUsers: async () => {
     set({ isUsersLoading: true });
     try {
-      const res = await API.getUsersForSidebar();
-      set({ users: res.data });
-    } catch (error) {
-      
-    } finally {
-      set({ isUsersLoading: false });
-    }
-  },
-  getUsersAndCategorize: async () => {
-    set({ isUsersLoading: true });
-    try {
-      const res = await API.getUsersForSidebar();
-      const users = res.data;
-      const recentUsers = [];
-      const newUsers = [];
+      const res = await API.getUserChats();
 
-      // Loop through each user and check if they have messages
-      for (const user of users) {
-        try {
-          const messagesRes = await API.getMessages(user.userID);
-          const messages = messagesRes.data;
-
-          if (messages.length > 0) {
-            recentUsers.push(user);
-          } else {
-            newUsers.push(user);
-          }
-        } catch (error) {
-          console.log(`Error fetching messages for user ${user._id}`, error);
-        }
-      }
-
-      set({
-        users,
-        recentUsers,
-        newUsers,
-      });
-
-    } catch (error) {
-      console.log("Error fetching users", error);
+      const users = Array.isArray(res.data) ? res.data : [];
+      set({ users });
+    } catch {
+      set({ users: [] });
     } finally {
       set({ isUsersLoading: false });
     }
   },
 
-  getMessages: async (userId) => {
+  // GET MESSAGES BY chat_id
+  getMessages: async (chat_id) => {
     set({ isMessagesLoading: true });
     try {
-      
-      const res = await API.getMessages(userId);
+      const res = await API.getMessages(chat_id);
       set({ messages: res.data });
-    } catch (error) {
-      // toast.error(error.response.data.message);
     } finally {
       set({ isMessagesLoading: false });
     }
   },
-  sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
-    try {
-      const res = await API.sendMessage({
-         id : selectedUser._id,
-         text : messageData.text,
-         image : messageData.image,
-       
-      })
-     
-     set(state => ({ messages: [...state.messages, res.data] }));
-     console.log(res.data , " res from sendmessage ")
-     
-    } catch (error) {
-      console.log(error  , " error from chat store sendmessage")
-    }
+
+  // SEND MESSAGE USING SOCKET
+  sendMessage: (messageData) => {
+    const { selectedUser } = get();
+    const socket = useAuthStore.getState().socket;
+
+    return new Promise((resolve, reject) => {
+      if (!selectedUser) return reject("No chat selected.");
+      if (!socket) return reject("Socket not connected.");
+
+      socket.emit(
+        "sendMessage",
+        {
+          chatId: selectedUser.chat_id,   // ⭐ backend wants chat_id
+          content: messageData.text,
+        },
+        (res) => {
+          if (!res) return reject("No server response.");
+          if (res.status === "ok") {
+            set((st) => ({
+              messages: [...st.messages, res.richMessage],
+            }));
+            return resolve(res.richMessage);
+          }
+          reject(res.message);
+        }
+      );
+    });
   },
 
-   subscribeToMessages: () => {
+  // JOIN CHAT ROOM + LISTEN
+  subscribeToMessages: () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
 
     const socket = useAuthStore.getState().socket;
+    if (!socket) return;
 
-    socket.on("newMessage", (newMessage) => {
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
+    // Join room
+    socket.emit("joinChat", selectedUser.chat_id);
 
-      set(state => ({
-  messages: [...state.messages, newMessage],
-}));
+    // Listener
+    const handler = (msg) => {
+      const msgChat = msg.chat_id ?? msg.chatId;
+      if (msgChat !== selectedUser.chat_id) return;
 
-    });
+      set((st) => ({
+        messages: [...st.messages, msg],
+      }));
+    };
+
+    socket.on("receiveMessage", handler);
+    set({ _messageListener: handler });
   },
 
+  // REMOVE OLD LISTENER
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-    socket.off("newMessage");
+    const { _messageListener } = get();
+
+    if (socket && _messageListener) {
+      socket.off("receiveMessage", _messageListener);
+      set({ _messageListener: null });
+    }
   },
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
-  
+  setSelectedUser: (user) => set({ selectedUser: user }),
 }));

@@ -26,64 +26,58 @@ const io = new Server(server, {
 });
 
 const corsOptions = {
-  origin: "http://localhost:3000", // <--- IMPORTANT: Replace with your actual frontend URL if different
-  credentials: true, // Allow cookies/auth headers to be sent
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Allowed HTTP methods
-  allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+
+    origin: 'http://localhost:3000', 
+    credentials: true, 
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], 
+    allowedHeaders: ['Content-Type', 'Authorization'], 
+
 };
 app.use(cors(corsOptions));
 
 app.use(cookieParser());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 async function testDbConnection() {
-  try {
-    const result = await db.query("SELECT NOW() AS current_db_time");
-    console.log(
-      "[DB Test]: Connection successful. Time from DB:",
-      result.rows[0].current_db_time
-    );
-  } catch (error) {
-    console.error(
-      "[DB Test]: Connection FAILED. Check credentials and server status."
-    );
-    console.error("Error details:", error.message);
-    // process.exit(1);
-  }
+
+    try {
+        const result = await db.query('SELECT NOW() AS current_db_time');
+        console.log('[DB Test]: Connection successful. Time from DB:', result.rows[0].current_db_time);
+    } catch (error) {
+        console.error('[DB Test]: Connection FAILED. Check credentials and server status.');
+        console.error('Error details:', error.message);
+    }
 }
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Welcome to the Social Media Backend API!",
-    database_status: "Connected and Ready",
-  });
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'Welcome to the Social Media Backend API!',
+        database_status: 'Connected and Ready'
+    });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/posts", postRoutes);
-app.use("/api/stories", storyRoutes);
-app.use("/api/chats", chatRoutes);
-app.use("/api/notifications", notificationRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/stories', storyRoutes);
+app.use('/api/chats', chatRoutes);
 
-require("./utils/cleanUpStories.js");
+require('./utils/cleanUpStories.js');
+
 
 // --- NEW: Socket.IO Authentication and Handlers ---
 const { authenticateSocket } = require("./middleware/socketAuth");
 const { registerChatHandlers } = require("./socket/socketHandler");
 
-// Use socket authentication middleware
 io.use(authenticateSocket);
 
-// Register Socket.IO event handlers
-io.on("connection", (socket) => {
-  console.log(
-    `Socket connected: ${socket.id} for user ${socket.user.username}`
-  );
-  // Pass the io instance and the connected socket to the handler
-  registerChatHandlers(io, socket);
+
+io.on('connection', (socket) => {
+    console.log(`Socket connected: ${socket.id} for user ${socket.user.username}`);
+    
+    registerChatHandlers(io, socket);
+
 
   socket.on("disconnect", () => {
     console.log(
@@ -92,6 +86,7 @@ io.on("connection", (socket) => {
   });
 });
 
+
 app.listen(PORT, () => {
   console.log(`\n======================================`);
   console.log(`Server is running on port: ${PORT}`);
@@ -99,4 +94,5 @@ app.listen(PORT, () => {
   console.log(`======================================`);
 
   testDbConnection();
+
 });

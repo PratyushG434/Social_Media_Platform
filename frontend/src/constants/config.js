@@ -103,14 +103,20 @@ export const SERVICE_URLS = {
   }),
 
   // CHAT/MESSAGES (Placeholders)
-  sendMessage: ({ id, text, image }) => ({
-    url: `/send/${id}`,
-    method: "POST",
-    data: { text, image },
+  
+  getMessages : ( chat_id) => ({
+    url: `/chats/${chat_id}/messages`,
+    method: "GET",
   }),
+
+
+  getUserChats: { url: "/chats", method: "GET" },
+  PostUserChats: { url: "/chats", method: "POST" },
+
   getUsersForSidebar: { url: "/chatlist", method: "GET" },
 
   // NOTIFICATIONS (NEW)
   getNotifications: { url: "/notifications", method: "GET" },
   markNotificationsRead: { url: "/notifications/read", method: "PATCH" },
+
 };
