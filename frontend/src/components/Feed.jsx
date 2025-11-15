@@ -11,17 +11,20 @@ import { NotificationProvider, useNotifications } from "./Notification-system"
 
 const FeedContent = () => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterType, setFilterType] = useState("all") 
+  const [filterType, setFilterType] = useState("all")
   const { authUser } = useAuthStore()
   const navigate = useNavigate()
   const { addNotification } = useNotifications();
 
-  const [allPosts, setAllPosts] = useState([]); 
-  const [likedPosts, setLikedPosts] = useState([]); 
+  const [allPosts, setAllPosts] = useState([]);
+  const [likedPosts, setLikedPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
 
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // --- Data Fetching Functions ---
   const fetchPosts = useCallback(async (type) => {
@@ -30,9 +33,9 @@ const FeedContent = () => {
       // 'all' tab uses getHomeFeed (Following Posts)
       const apiCall = type === 'liked' ? API.getLikedPosts : API.getHomeFeed;
       const response = await apiCall();
-      
+
       if (!response?.isSuccess) throw new Error(`Failed to fetch ${type} posts`);
-      
+
       const postsData = response.data.posts || [];
       if (type === 'liked') {
         setLikedPosts(postsData);
@@ -42,13 +45,13 @@ const FeedContent = () => {
     } catch (err) {
       console.error(`Feed Fetch Error (${type}):`, err);
       addNotification({
-          type: 'error',
-          title: `Error Loading ${type === 'all' ? 'Feed' : 'Likes'}`,
-          message: 'Could not load posts. Check network or server logs.'
+        type: 'error',
+        title: `Error Loading ${type === 'all' ? 'Feed' : 'Likes'}`,
+        message: 'Could not load posts. Check network or server logs.'
       });
       if (type === 'liked') setLikedPosts([]);
       else setAllPosts([]);
-      
+
     } finally {
       setLoadingPosts(false);
     }
@@ -58,7 +61,43 @@ const FeedContent = () => {
   // Effect to refetch posts when the filterType changes
   useEffect(() => {
     fetchPosts(filterType);
-  }, [filterType, fetchPosts]); 
+  }, [filterType, fetchPosts]);
+
+
+  // serach users
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    const delay = setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+        console.log("this",searchQuery)
+        const response = await API.searchUsers({searchQuery});
+
+        if (response?.isSuccess) {
+          setSearchResults(response.data || []);
+          setShowSearchResults(true);
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300); // 🔥 debounce 300ms
+
+    return () => clearTimeout(delay);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClick = () => setShowSearchResults(false);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
+
 
 
   // Effect for fetching suggested users
@@ -77,7 +116,7 @@ const FeedContent = () => {
       }
     };
     getSuggestions();
-  }, []); 
+  }, []);
 
 
   // --- Like Toggle Handler (Lifted State Up) ---
@@ -110,7 +149,7 @@ const FeedContent = () => {
       console.error("Failed to sync like with server:", err);
       setAllPosts(prev => updatePostInList(prev));
       addNotification({ type: 'error', title: 'Like Failed', message: 'Could not update like status on server.' });
-      if(filterType === 'liked') fetchPosts('liked'); 
+      if (filterType === 'liked') fetchPosts('liked');
     });
   }, [allPosts, fetchPosts, filterType, addNotification]);
 
@@ -147,8 +186,48 @@ const FeedContent = () => {
         </div>
         <div className="relative">
           <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search posts, people..." className="w-full pl-10 pr-4 py-2.5 bg-white/80 border border-primary/20 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all duration-300" />
+
+
+
           <svg className="w-5 h-5 text-primary/60 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          {showSearchResults && (
+            <div
+              className="absolute top-full left-0 w-full bg-white shadow-lg border border-gray-200 mt-2 rounded-xl z-50 max-h-64 overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {searchLoading && (
+                <p className="p-3 text-sm text-gray-500">Searching...</p>
+              )}
+
+              {!searchLoading && searchResults.length === 0 && (
+                <p className="p-3 text-sm text-gray-500">No users found.</p>
+              )}
+
+              {!searchLoading &&
+                searchResults.map((user) => (
+                  <div
+                    key={user.user_id}
+                    onClick={() => {
+                      navigate(`/profile/${user.user_id}`)
+                      setShowSearchResults(false)
+                    }}
+                    className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer transition"
+                  >
+                    <img
+                      src={user.profile_pic_url || "/placeholder.svg"}
+                      alt="avatar"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-800">{user.display_name}</p>
+                      <p className="text-xs text-gray-500">@{user.username}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
+
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide">
           {[
             { id: "all", label: "Following", icon: "📱" },
@@ -194,23 +273,23 @@ const FeedContent = () => {
         {loadingPosts && (
           <div className="text-center py-12 text-muted-foreground">Loading posts...</div>
         )}
-        
+
         {isFeedEmpty && (
-            <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">
-                <div className="text-6xl mb-4">{filterType === 'liked' ? '💔' : '✨'}</div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                    {filterType === 'liked' ? 'No Liked Posts Yet' : 'Your Feed is Empty'}
-                </h3>
-                <p className="text-gray-500">{filterType === 'liked' ? 'Posts you like will appear here.' : 'Follow users to see their posts here!'}</p>
-            </div>
+          <div className="text-center py-12 bg-white rounded-2xl border border-primary/10">
+            <div className="text-6xl mb-4">{filterType === 'liked' ? '💔' : '✨'}</div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              {filterType === 'liked' ? 'No Liked Posts Yet' : 'Your Feed is Empty'}
+            </h3>
+            <p className="text-gray-500">{filterType === 'liked' ? 'Posts you like will appear here.' : 'Follow users to see their posts here!'}</p>
+          </div>
         )}
 
         {!loadingPosts && postsToDisplay.length > 0 && (
           postsToDisplay.map((post) => (
             <PostCard
-              key={post.post_id} 
-              post={post} 
-              onLikeToggle={handleLikeToggleInFeed} 
+              key={post.post_id}
+              post={post}
+              onLikeToggle={handleLikeToggleInFeed}
             />
           ))
         )}
