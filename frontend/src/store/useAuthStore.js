@@ -1,6 +1,6 @@
+// useAuthStore.jsx
 import { create } from "zustand";
 import API from "../service/api";
-
 import { io } from "socket.io-client";
 
 const BASE_URL = "http://localhost:8000";
@@ -9,22 +9,18 @@ export const useAuthStore = create((set, get) => ({
   authUser: null,
   isRegistering: false,
   isLoggingIn: false,
-  isUpdatingProfile: false,
   isCheckingAuth: true,
   onlineUsers: [],
   socket: null,
 
   checkAuth: async () => {
     set({ isCheckingAuth: true });
-
     try {
       const res = await API.checkAuth();
       set({ authUser: res.data });
+      get().connectSocket();   // ✔ auto connect after refresh
     } catch (error) {
-      console.log("Error in checkAuth:", error);
       set({ authUser: null });
-      set({ isCheckingAuth: false }); 
-
     } finally {
       set({ isCheckingAuth: false });
     }
@@ -33,12 +29,10 @@ export const useAuthStore = create((set, get) => ({
   login: async (data) => {
     set({ isLoggingIn: true });
     try {
-      set({ authUser: data }); // this saves the logged-in user
-      console.log(get().authUser, " from useAuthStore after setting");
+      set({ authUser: data });
 
-      // get().connectSocket(); // if you implement sockets later
-    } catch (error) {
-      console.log("error in set authuser in useauthsotre");
+      // ⭐ MOST IMPORTANT
+      get().connectSocket();
     } finally {
       set({ isLoggingIn: false });
     }
@@ -46,31 +40,28 @@ export const useAuthStore = create((set, get) => ({
 
   logout: async () => {
     try {
-      const response = await API.logout();
+      await API.logout();
       set({ authUser: null });
-
-      // get().disconnectSocket();
+      get().disconnectSocket();
     } catch (error) {}
   },
 
-  //   connectSocket: () => {
-  //     const { authUser } = get();
-  //     if (!authUser || get().socket?.connected) return;
+  connectSocket: () => {
+    const { authUser, socket } = get();
+    if (!authUser || socket?.connected) return;
 
-  //     const socket = io(BASE_URL, {
-  //       query: {
-  //         userId: authUser._id,
-  //       },
-  //     });
-  //     socket.connect();
+    const newSocket = io(BASE_URL, {
+      query: { userId: authUser.user_id }, // ⭐ backend expects user_id
+    });
 
-  //     set({ socket: socket });
+    set({ socket: newSocket });
 
-  //     socket.on("getOnlineUsers", (userIds) => {
-  //       set({ onlineUsers: userIds });
-  //     });
-  //   },
-  //   disconnectSocket: () => {
-  //     if (get().socket?.connected) get().socket.disconnect();
-  //   },
+    newSocket.on("getOnlineUsers", (online) => {
+      set({ onlineUsers: online });
+    });
+  },
+
+  disconnectSocket: () => {
+    if (get().socket?.connected) get().socket.disconnect();
+  },
 }));

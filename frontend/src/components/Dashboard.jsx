@@ -13,7 +13,7 @@ import StoryCreate from "./StoryCreate"
 import Videos from "./Videos"
 import Shorts from "./Shorts"
 import Explore from "./Explore"
-
+import ChatPage from "./Chat"
 export default function Dashboard() {
   const navigate = useNavigate()
 
@@ -28,7 +28,7 @@ export default function Dashboard() {
           <Route path="explore" element={<Explore />} />
           <Route path="videos" element={<Videos />} />
           <Route path="shorts" element={<Shorts />} />
-          <Route path="messages" element={<Messages />} />
+          <Route path="messages" element={<ChatPage />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
           

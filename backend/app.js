@@ -15,8 +15,6 @@ const chatRoutes = require('./routes/chatRoutes');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-
-
 const server = http.createServer(app); // --- NEW: Create HTTP server from Express app ---
 const io = new Server(server, {       // --- NEW: Initialize Socket.IO server ---
     cors: {
@@ -25,19 +23,15 @@ const io = new Server(server, {       // --- NEW: Initialize Socket.IO server --
     }
 });
 
-
-
-
 const corsOptions = {
-    origin: 'http://localhost:3000', // <--- IMPORTANT: Replace with your actual frontend URL if different
-    credentials: true, // Allow cookies/auth headers to be sent
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+    origin: 'http://localhost:3000', 
+    credentials: true, 
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], 
+    allowedHeaders: ['Content-Type', 'Authorization'], 
 };
 app.use(cors(corsOptions));
 
 app.use(cookieParser());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,10 +42,8 @@ async function testDbConnection() {
     } catch (error) {
         console.error('[DB Test]: Connection FAILED. Check credentials and server status.');
         console.error('Error details:', error.message);
-        // process.exit(1);
     }
 }
-
 
 app.get('/', (req, res) => {
     res.status(200).json({
@@ -66,21 +58,17 @@ app.use('/api/posts', postRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/chats', chatRoutes);
 
-
 require('./utils/cleanUpStories.js');
-
 
 // --- NEW: Socket.IO Authentication and Handlers ---
 const { authenticateSocket } = require('./middleware/socketAuth');
 const { registerChatHandlers } = require('./socket/socketHandler');
 
-// Use socket authentication middleware
 io.use(authenticateSocket);
 
-// Register Socket.IO event handlers
 io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id} for user ${socket.user.username}`);
-    // Pass the io instance and the connected socket to the handler
+    
     registerChatHandlers(io, socket);
 
     socket.on('disconnect', () => {
@@ -88,9 +76,10 @@ io.on('connection', (socket) => {
     });
 });
 
-app.listen(PORT, () => {
+// ✅ ONLY CHANGE → Use `server.listen()` instead of `app.listen()`
+server.listen(PORT, () => {
     console.log(`\n======================================`);
-    console.log(`Server is running on port: ${PORT}`);
+    console.log(`Server + Socket.IO running on port: ${PORT}`);
     console.log(`Access at: http://localhost:${PORT}`);
     console.log(`======================================`);
 
