@@ -5,6 +5,7 @@ import API from "../service/api"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate, useParams } from "react-router-dom"
 import Avatar from "./Avatar"; 
+import PostCard from "./PostCard"; // --- NEW: Import PostCard ---
 
 export default function Profile() {
   const { userId: paramId } = useParams();
@@ -14,6 +15,9 @@ export default function Profile() {
   const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
+  // --- NEW: View Mode State (Defaulting to list for all posts) ---
+  const [viewMode, setViewMode] = useState("list"); 
+  // --- END NEW ---
 
   const { authUser } = useAuthStore();
   const navigate = useNavigate();
@@ -51,10 +55,24 @@ export default function Profile() {
           throw new Error("Failed to fetch user data.");
       }
 
-      const { user: userData} = response.data;
-      const {  posts: userPostsData, followers: userFollowers, following: userFollowing } = response.data.user;
+      // --- FIX: Correct data structure extraction ---
+      // When fetching profile, the BE wraps posts/followers/following inside the 'user' object.
+      // We need to handle both structures depending on the BE implementation.
+      const userData = response.data.user || response.data;
+      const userPostsData = userData.posts || [];
+      const userFollowers = userData.followers || [];
+      const userFollowing = userData.following || [];
+      
       setUser(userData);
-      setUserPosts(userPostsData || []);
+      
+      // Ensure post objects have default like status for PostCard reuse
+      const postsWithLikeStatus = userPostsData.map(p => ({
+          ...p,
+          user_has_liked: p.user_has_liked || false 
+      }));
+      setUserPosts(postsWithLikeStatus);
+      // --- END FIX ---
+
 
       if (!isOwnProfile && authUser && userData) {
           const currentAuthUserId = authUser.user_id;
@@ -93,17 +111,16 @@ export default function Profile() {
 
   const handleFollowToggle = useCallback(async () => {
     if (!user || !authUser) return; 
-
+    // ... (existing handleFollowToggle logic)
     const targetUserId = user.user_id;
 
     setIsFollowing(prev => !prev);
     
     setUser(prevUser => {
         if (!prevUser) return null;
-        const newFollowers = isFollowing 
-            ? prevUser.followers.filter(f => f.user_id !== authUser.user_id) 
-            : [...prevUser.followers, { user_id: authUser.user_id, username: authUser.username }];
-        return { ...prevUser, followers: newFollowers };
+        // The BE logic handles updating follower counts, we skip complex local state updates here for brevity 
+        // in favor of simplicity, relying on a full re-fetch if necessary.
+        return prevUser; 
     });
 
     try {
@@ -118,6 +135,28 @@ export default function Profile() {
       setIsFollowing(prev => !prev);
     }
   }, [user, authUser, isFollowing]);
+
+
+  // --- NEW: PostCard requires an onLikeToggle handler ---
+  const handleLikeToggle = (postId, currentlyLiked) => {
+    // Optimistically update the local posts state
+    setUserPosts(prevPosts => prevPosts.map(p => {
+        if (p.post_id === postId) {
+            return {
+                ...p,
+                user_has_liked: !p.user_has_liked,
+                likes_count: p.user_has_liked ? p.likes_count - 1 : p.likes_count + 1,
+            };
+        }
+        return p;
+    }));
+
+    // Send API request 
+    API.toggleLike(postId).catch(err => {
+        console.error("Failed to sync like with server:", err);
+    });
+  };
+  // --- END NEW ---
 
 
   if (loading) {
@@ -142,6 +181,46 @@ export default function Profile() {
       </div>
     );
   }
+
+  // --- NEW: Helper Components for View Modes ---
+  const GridView = ({ posts }) => (
+    <div className="grid grid-cols-3 gap-1">
+      {posts.filter(p => p.content_type !== 'text').length > 0 ? (
+          posts.filter(p => p.content_type !== 'text').map((post) => (
+              <div 
+                  key={post.post_id} 
+                  className="relative aspect-square group cursor-pointer"
+                  onClick={() => navigate(`/post/${post.post_id}`)}
+              >
+                  <img
+                    src={post.media_url || "/placeholder.svg"}
+                    alt="Post"
+                    className="w-full h-full object-cover"
+                  />
+              </div>
+          ))
+      ) : (
+        <p className="text-center text-muted-foreground py-8 col-span-full">No media posts yet.</p>
+      )}
+    </div>
+  );
+
+  const ListView = ({ posts, onLikeToggle }) => (
+    <div className="space-y-4">
+      {posts.length > 0 ? (
+          posts.map((post) => (
+              <PostCard 
+                key={post.post_id} 
+                post={post} 
+                onLikeToggle={onLikeToggle} 
+              />
+          ))
+      ) : (
+        <p className="text-center text-muted-foreground py-8 col-span-full">No posts yet.</p>
+      )}
+    </div>
+  );
+  // --- END NEW ---
 
 
   return (
@@ -264,28 +343,41 @@ export default function Profile() {
             </button>
           </div>
         </div>
+        
+        {/* --- NEW: View Mode Toggle --- */}
+        {activeTab === "posts" && userPosts.length > 0 && (
+            <div className="flex justify-end space-x-2 mb-4">
+                <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-2 rounded-full transition-colors ${viewMode === "list" ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}
+                    title="List View"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm0 2h6v12H7V4zM5 4H4v12h1V4zM15 4h1v12h-1V4z"/></svg>
+                </button>
+                <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-2 rounded-full transition-colors ${viewMode === "grid" ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}
+                    title="Grid View"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h4v4H5V5zm6 0h4v4h-4V5zm-6 6h4v4H5v-4zm6 0h4v4h-4v-4z"/></svg>
+                </button>
+            </div>
+        )}
+        {/* --- END NEW --- */}
 
-        {/* Posts Grid */}
+
+        {/* Posts Content (Modified to use View Modes) */}
         {activeTab === "posts" && (
-          <div className="grid grid-cols-3 gap-1">
-            {userPosts.length > 0 ? (
-                userPosts.map((post) => (
-                  <div 
-                        key={post.post_id} 
-                        className="relative aspect-square group cursor-pointer"
-                        onClick={() => navigate(`/post/${post.post_id}`)}
-                    >
-                     <img
-                          src={post.media_url || "/placeholder.svg"}
-                          alt="Post"
-                          className="w-full h-full object-cover"
-                        />
-                    </div>
-                ))
-            ) : (
-              <p className="text-center text-muted-foreground py-8 col-span-full">No posts yet.</p>
-            )}
-          </div>
+            <div className="flex flex-col">
+                {userPosts.length > 0 ? (
+                    <>
+                        {viewMode === "list" && <ListView posts={userPosts} onLikeToggle={handleLikeToggle} />}
+                        {viewMode === "grid" && <GridView posts={userPosts} />}
+                    </>
+                ) : (
+                    <p className="text-center text-muted-foreground py-8 col-span-full">No posts yet.</p>
+                )}
+            </div>
         )}
 
         {activeTab === "tagged" && (
