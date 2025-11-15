@@ -31,7 +31,7 @@ export const SERVICE_URLS = {
   registerUser: { url: "/auth/register", method: "POST" },
 
   checkAuth: { url: "/users/check", method: "GET" },
-  logout: { url: "/logout", method: "POST" },
+  logout: { url: "/auth/logout", method: "POST" },
 
   // POSTS & FEEDS
   createPost: { url: "/posts", method: "POST" },

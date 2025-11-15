@@ -9,7 +9,8 @@ import messengerIcon from "../assets/icons/messenger.png";
 import bellIcon from "../assets/icons/bell.png";
 import userIcon from "../assets/icons/user.png";
 import settingsIcon from "../assets/icons/setting.png"
-import logoutIcon from "../assets/icons/logout.png"
+import logoutIcon from "../assets/icons/logout.png";
+
 
 export default function SideNavigation() {
   const { authUser, logout } = useAuthStore();
@@ -29,7 +30,7 @@ export default function SideNavigation() {
       id: "profile",
       label: "Profile",
       iconUrl: userIcon,
-      path: `/profile/${authUser?.user_id}`
+      path: `/dashboard/profile/${authUser?.user_id}`
     },
      {
       id: "Post-create",
@@ -55,7 +56,7 @@ export default function SideNavigation() {
 
   const handleLogout = async () => {
     try {
-      await API.logout(); // Use the API service to clear the cookie
+      
       await logout(); // Update Zustand state
       navigate("/login");
     } catch (err) {

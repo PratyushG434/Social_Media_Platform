@@ -31,7 +31,7 @@ export default function Dashboard() {
           <Route path="messages" element={<Messages />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
-          
+          <Route path="profile/:id" element={<Profile />} />
           {/* Create Pages */}
           <Route path="post-create" element={<PostCreate />} />
           <Route path="story-create" element={<StoryCreate />} />
