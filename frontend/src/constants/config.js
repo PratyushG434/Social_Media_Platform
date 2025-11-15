@@ -57,6 +57,11 @@ export const SERVICE_URLS = {
     method: "GET",
   }),
 
+  deletePost: (postId) => ({
+    url: `/posts/${postId}`,
+    method: "DELETE",
+  }),
+
   // USERS & PROFILE
   searchUsers: (query) => ({
     url: "/users/search",

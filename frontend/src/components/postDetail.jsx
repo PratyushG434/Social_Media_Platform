@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API from '../service/api';
-import PostCard from './PostCard'; // Reuse PostCard component
+import PostCard from './PostCard'; 
 import { useNotifications } from './Notification-system';
 
 export default function PostDetail() {
@@ -22,7 +22,12 @@ export default function PostDetail() {
       if (!response?.isSuccess) {
         throw new Error(response?.msg || "Post not found.");
       }
-      setPost(response.data.post);
+      // Ensure post object has user_has_liked property for PostCard
+      const fetchedPost = {
+          ...response.data.post, 
+          user_has_liked: response.data.post.user_has_liked || false
+      };
+      setPost(fetchedPost);
     } catch (err) {
       console.error("Error fetching post:", err);
       setError(err.message);
@@ -40,7 +45,7 @@ export default function PostDetail() {
     fetchPost();
   }, [fetchPost]);
 
-  // Handler for like toggle, re-fetches or updates local state
+  // Handler for like toggle, updates local state
   const handleLikeToggle = (pId, currentlyLiked) => {
     // Optimistic update for the current post
     setPost(prevPost => ({
@@ -97,7 +102,7 @@ export default function PostDetail() {
       </div>
       
       {/* Reusing the PostCard component for display */}
-      <PostCard post={{ ...post, user_has_liked: post.user_has_liked }} onLikeToggle={handleLikeToggle} />
+      <PostCard post={post} onLikeToggle={handleLikeToggle} />
       
     </div>
   );
