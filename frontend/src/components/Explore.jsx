@@ -125,6 +125,7 @@ export default function Explore() {
               <div
                 key={post.post_id} 
                 className="group relative aspect-square bg-card rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200"
+                onClick={() => navigate(`/post/${post.post_id}`)}
               >
                 <img
                   src={post.media_url || "/placeholder.svg"} 

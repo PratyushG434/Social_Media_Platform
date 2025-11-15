@@ -4,13 +4,14 @@ import { useState } from "react"
 import API from "../service/api"
 import { useNotifications } from "./Notification-system";
 import { useAuthStore } from "../store/useAuthStore";
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom" // Import useLocation
 import Avatar from "./Avatar";
 
 export default function PostCard({ post, onLikeToggle }) {
   const { addNotification } = useNotifications();
   const { authUser } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation(); 
 
   // State is derived from props (Single Source of Truth)
   const isLiked = post.user_has_liked;
@@ -74,6 +75,16 @@ export default function PostCard({ post, onLikeToggle }) {
     }
   };
 
+  const isDetailPage = location.pathname.startsWith(`/post/${post.post_id}`);
+
+  const handlePostContentClick = () => {
+    // Only navigate to detail if we are NOT already on the detail page
+    if (!isDetailPage) {
+        navigate(`/post/${post.post_id}`);
+    }
+  };
+
+
   return (
     <div className="bg-white rounded-2xl border border-primary/10 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
       {/* Post Header */}
@@ -90,17 +101,21 @@ export default function PostCard({ post, onLikeToggle }) {
         </div>
       </div>
 
-      {/* Post Content */}
-      <div className="px-4 pb-3">
-        <p className="text-gray-800 leading-relaxed">{post.content}</p>
+      {/* Post Content and Media (Clickable area to go to detail) */}
+      <div onClick={handlePostContentClick} className={isDetailPage ? "" : "cursor-pointer"}>
+          {/* Post Content */}
+          <div className="px-4 pb-3">
+            <p className="text-gray-800 leading-relaxed">{post.content}</p>
+          </div>
+
+          {/* Post Media */}
+          {post.media_url && (
+            <div className="relative group">
+              <img src={post.media_url} alt="Post content" className="w-full h-auto max-h-[600px] object-cover" />
+            </div>
+          )}
       </div>
 
-      {/* Post Media */}
-      {post.media_url && (
-        <div className="relative group">
-          <img src={post.media_url} alt="Post content" className="w-full h-auto max-h-[600px] object-cover" />
-        </div>
-      )}
 
       {/* Actions (Likes, Comments) */}
       <div className="p-4">

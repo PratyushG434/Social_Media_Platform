@@ -38,6 +38,11 @@ export const SERVICE_URLS = {
   getHomeFeed: { url: "/posts/feed", method: "GET" }, // Following Feed
   getDiscoveryFeed: { url: "/posts", method: "GET" }, // Discovery/Explore Feed
   getLikedPosts: { url: "/posts/liked", method: "GET" },
+  getPostById: (postId) => ({
+    url: `/posts/${postId}`,
+    method: "GET",
+  }),
+
   toggleLike: (postId) => ({
     url: `/posts/${postId}/likes`,
     method: "POST",

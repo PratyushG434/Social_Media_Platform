@@ -270,8 +270,12 @@ export default function Profile() {
           <div className="grid grid-cols-3 gap-1">
             {userPosts.length > 0 ? (
                 userPosts.map((post) => (
-                    <div key={post.post_id} className="relative aspect-square group cursor-pointer">
-                        <img
+                  <div 
+                        key={post.post_id} 
+                        className="relative aspect-square group cursor-pointer"
+                        onClick={() => navigate(`/post/${post.post_id}`)}
+                    >
+                     <img
                           src={post.media_url || "/placeholder.svg"}
                           alt="Post"
                           className="w-full h-full object-cover"
