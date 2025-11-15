@@ -42,7 +42,6 @@ export const SERVICE_URLS = {
   getUsersForSidebar: { url: '/chatlist', method: 'GET' },
   createPost: { url: '/posts', method: 'POST' },
   createStory: { url: '/stories', method: 'POST' },
-  getPosts: { url: '/posts', method: 'GET' },
   getMyProfile: { url: '/users/me', method: 'GET' },
   getUserProfile: ({ userId }) => ({
     url: `users/${userId}`,
@@ -63,8 +62,11 @@ export const SERVICE_URLS = {
   }),
 
 
-  getLikedPosts: { url: '/posts/liked', method: 'GET' }, // NEW
-  getAllPosts: { url: '/posts', method: 'GET' },
+  getHomeFeed: { url: '/posts/feed', method: 'GET' },          // Posts from users you follow
+  getDiscoveryFeed: { url: '/posts', method: 'GET' },         // All other posts (Explore logic)
+  
+  getLikedPosts: { url: '/posts/liked', method: 'GET' },
+  // ... (rest of the services) ...
   getStoriesFeed: { url: '/stories/feed', method: 'GET' },
 
   getUserStories: (userId) => ({

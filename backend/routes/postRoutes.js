@@ -21,12 +21,7 @@ router.get('/:id/comments', commentController.getCommentsForPost);
 
 router.post("/:id/likes", protect, likeController.toggleLike);
 
-// We're adding protect as optional here to populate req.user if present,
-// so getLikesCountForPost can determine if the current user has liked it.
 router.get('/:id/likes', (req, res, next) => {
-    // This is a common pattern for "optional" middleware.
-    // If the Authorization header is present, call 'protect'.
-    // If not, just call 'next()' to proceed to the controller without req.user.
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         return protect(req, res, next);
     }

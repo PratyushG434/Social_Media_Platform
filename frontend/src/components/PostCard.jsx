@@ -125,23 +125,22 @@ export default function PostCard({ post, currentUser, onNavigate }) {
             className="relative cursor-pointer"
             onClick={() => navigate(`/profile/${post.user_id}`)}
           >
-            {/* --- FIX: Replace img with Avatar --- */}
             <Avatar 
               src={normalizedPost.user.profilePic} 
               name={normalizedPost.user.displayName}
               className="w-11 h-11 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300"
             />
-            {/* The online status indicator can stay */}
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
 
-          <div>
-            <p className="font-bold text-gray-800 cursor-pointer hover:text-primary transition-colors">
-              {normalizedPost.user.displayName}
+          <div 
+            className="cursor-pointer" // Add cursor-pointer for visual feedback
+            onClick={() => navigate(`/profile/${post.user_id}`)}
+          >
+            <p className="font-bold text-gray-800 hover:text-primary transition-colors">
+              {post.display_name || post.username}
             </p>
-            <p className="text-xs text-gray-500">
-              @{normalizedPost.user.username} • {normalizedPost.timestamp}
-            </p>
+            <p className="text-xs text-gray-500">@{post.username} • {new Date(post.timestamp).toLocaleDateString()}</p>
           </div>
         </div>
 

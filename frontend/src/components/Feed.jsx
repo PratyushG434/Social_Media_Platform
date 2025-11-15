@@ -30,7 +30,7 @@ const FeedContent = () => {
   const fetchPosts = useCallback(async (type) => {
     setLoadingPosts(true);
     try {
-      const apiCall = type === 'liked' ? API.getLikedPosts : API.getAllPosts;
+      const apiCall = type === 'liked' ? API.getLikedPosts : API.getHomeFeed; 
       const response = await apiCall();
       if (!response?.isSuccess) throw new Error(`Failed to fetch ${type} posts`);
       
@@ -42,10 +42,13 @@ const FeedContent = () => {
       }
     } catch (err) {
       console.error(`Feed Fetch Error (${type}):`, err);
+        if (type === 'all') {
+         setAllPosts([]);
+        }
     } finally {
       setLoadingPosts(false);
     }
-  }, []); // Dependencies: none, as API functions are stable
+  }, []); 
 
   // Effect to fetch initial posts (all posts) when component mounts
   useEffect(() => {
