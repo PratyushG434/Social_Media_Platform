@@ -51,8 +51,8 @@ export default function Profile() {
           throw new Error("Failed to fetch user data.");
       }
 
-      const { user: userData, posts: userPostsData, followers: userFollowers, following: userFollowing } = response.data;
-      
+      const { user: userData} = response.data;
+      const {  posts: userPostsData, followers: userFollowers, following: userFollowing } = response.data.user;
       setUser(userData);
       setUserPosts(userPostsData || []);
 
