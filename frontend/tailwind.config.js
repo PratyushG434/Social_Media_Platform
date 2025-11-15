@@ -44,6 +44,12 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        'papery-light': '0px 1px 3px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04)',
+        'papery-medium': '0px 4px 6px rgba(0, 0, 0, 0.1), 0px 2px 4px rgba(0, 0, 0, 0.06)',
+        'papery-heavy': '0px 10px 15px rgba(0, 0, 0, 0.15), 0px 4px 6px rgba(0, 0, 0, 0.07)',
+      },
+
     },
   },
   plugins: [],

@@ -1,95 +1,137 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import API from "../service/api"
 import { useAuthStore } from "../store/useAuthStore"
-import { useNavigate } from "react-router-dom"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import Avatar from "./Avatar"; 
+
 export default function Profile() {
-
   const { userId: paramId } = useParams();
-  const userId = paramId || null;
-  const [user, setUser] = useState(null)
-  const [userPosts, setUserPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("posts")
+  const userId = paramId ? parseInt(paramId, 10) : null; 
 
-  const { authUser } = useAuthStore()        // ⭐ NEW
-  const navigate = useNavigate()
+  const [user, setUser] = useState(null);
+  const [userPosts, setUserPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("posts");
 
-  const isOwnProfile = !userId || authUser?.user_id === parseInt(paramId); // More robust check
+  const { authUser } = useAuthStore();
+  const navigate = useNavigate();
 
-  const [isFollowing, setIsFollowing] = useState(false)        // ⭐ NEW
-  const [followsMe, setFollowsMe] = useState(false)            // ⭐ NEW
+  const isOwnProfile = !paramId || (authUser && authUser.user_id === userId);
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followsMe, setFollowsMe] = useState(false);
+
+  // --- Fetch User Profile Data ---
+  const fetchUserProfile = useCallback(async () => {
+    setLoading(true);
+    setUser(null);
+    setUserPosts([]);
+
+    try {
+      if (isOwnProfile && !authUser?.user_id) {
+          if (!paramId) navigate('/login'); 
+          return; 
+      }
+
+      const targetId = isOwnProfile ? authUser.user_id : userId;
+      if (!targetId) {
+        throw new Error("Target User ID is not valid.");
+      }
+      
+      const response = isOwnProfile
+        ? await API.getMyProfile()
+        : await API.getUserProfile({ userId: targetId });
+      
+      if (!response?.isSuccess) {
+          if (response?.code === 404) {
+              throw new Error("User not found.");
+          }
+          throw new Error("Failed to fetch user data.");
+      }
+
+      const { user: userData, posts: userPostsData, followers: userFollowers, following: userFollowing } = response.data;
+      
+      setUser(userData);
+      setUserPosts(userPostsData || []);
+
+      if (!isOwnProfile && authUser && userData) {
+          const currentAuthUserId = authUser.user_id;
+
+          const isAuthUserFollowing = userFollowers?.some(f => f.user_id === currentAuthUserId) || false;
+          setIsFollowing(isAuthUserFollowing);
+          
+          const doesTargetFollowMe = userFollowing?.some(f => f.user_id === currentAuthUserId) || false;
+          setFollowsMe(doesTargetFollowMe);
+      } else {
+          setIsFollowing(false); 
+          setFollowsMe(false);
+      }
+
+    } catch (err) {
+      console.error("Profile fetch error =>", err);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, isOwnProfile, authUser, navigate, paramId]); 
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        let response
-
-        if (isOwnProfile) {
-          // ⭐ Fetch my own profile
-          response = await API.getMyProfile()
-        } else {
-          // ⭐ Fetch other user's profile
-          response = await API.getUserProfile({ userId })
-        }
-
-        if (!response?.isSuccess) throw new Error("Failed to fetch user")
-
-        const data = response.data.user||response.data;
-        setUser(data);
-        setUserPosts(data.posts || []);
-
-
-        // ⭐ For other users → extract follow states
-        if (!isOwnProfile&&data.followers && authUser) {
-          const followers = data.followers?.map((u) => u.user_id) || []
-          const following = data.following?.map((u) => u.user_id) || []
-
-          setFollowsMe(followers.includes(authUser.user_id))
-          setIsFollowing(following.includes(authUser.user_id))
-        }
-
-        setUserPosts(data.posts || [])
-      } catch (err) {
-        console.log("Profile fetch error =>", err)
-      } finally {
-        setLoading(false)
-      }
+    if ( (isOwnProfile && authUser?.user_id) || (!isOwnProfile && userId) ) {
+        fetchUserProfile();
+    } else if (!authUser && !paramId) {
+        setLoading(false);
+        setUser(null);
+        navigate('/login');
+    } else {
+        setLoading(false);
+        setUser(null);
     }
+  }, [userId, isOwnProfile, authUser, paramId, navigate, fetchUserProfile]);
 
-    fetchUser()
-  }, [userId, isOwnProfile,authUser])
 
-  // ⭐ Follow / Unfollow handler
-  const handleFollowToggle = async () => {
+  const handleFollowToggle = useCallback(async () => {
+    if (!user || !authUser) return; 
+
+    const targetUserId = user.user_id;
+
+    setIsFollowing(prev => !prev);
+    
+    setUser(prevUser => {
+        if (!prevUser) return null;
+        const newFollowers = isFollowing 
+            ? prevUser.followers.filter(f => f.user_id !== authUser.user_id) 
+            : [...prevUser.followers, { user_id: authUser.user_id, username: authUser.username }];
+        return { ...prevUser, followers: newFollowers };
+    });
+
     try {
- 
-      const res = await API.toggleFollow({userId} )
-      if (!res?.isSuccess) return
+      const response = await API.toggleFollow({ userId: targetUserId });
+      if (!response?.isSuccess) throw new Error("Failed to toggle follow status");
 
-      const { following } = res.data // boolean
+      const { following } = response.data; 
+      setIsFollowing(following); 
 
-      setIsFollowing(following)
     } catch (err) {
-      console.error("Follow error:", err)
+      console.error("Follow toggle error:", err);
+      setIsFollowing(prev => !prev);
     }
-  }
+  }, [user, authUser, isFollowing]);
+
 
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center text-muted-foreground">
         Loading profile...
       </div>
-    )
+    );
   }
 
-if (!user) {
+  if (!user) {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center">
-        <h2 className="text-xl font-bold text-destructive">User Not Found</h2>
+        <h2 className="text-xl font-bold text-destructive">Profile Not Found</h2>
         <p className="text-muted-foreground">The profile you are looking for does not exist.</p>
         <button
             onClick={() => navigate("/dashboard")}
@@ -108,7 +150,7 @@ if (!user) {
       <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-border p-4 z-10">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate(-1)}
             className="text-muted-foreground hover:text-card-foreground transition-colors"
           >
             <span className="text-xl">←</span>
@@ -116,12 +158,15 @@ if (!user) {
 
           <h1 className="text-xl font-semibold text-card-foreground">@{user.username}</h1>
 
-          <button
-            onClick={() => navigate("/dashboard/settings")}
-            className="text-muted-foreground hover:text-card-foreground transition-colors"
-          >
-            <span className="text-xl">⚙️</span>
-          </button>
+          {isOwnProfile ? (
+            <button
+                onClick={() => navigate("/dashboard/settings")}
+                className="text-muted-foreground hover:text-card-foreground transition-colors"
+            >
+                <span className="text-xl">⚙️</span>
+            </button>
+          ) : <div className="w-6"></div>}
+
         </div>
       </div>
 
@@ -131,7 +176,7 @@ if (!user) {
           <Avatar
             src={user.profile_pic_url}
             name={user.display_name || user.username} 
-            className="w-20 h-20" // Larger size for the profile page
+            className="w-20 h-20"
           />
 
 
@@ -179,15 +224,15 @@ if (!user) {
                     onClick={handleFollowToggle}
                     className="flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
                   >
-                    {followsMe && !isFollowing
-                      ? "Follow Back"
-                      : isFollowing
-                        ? "Unfollow"
+                    {isFollowing
+                      ? "Unfollow"
+                      : followsMe
+                        ? "Follow Back"
                         : "Follow"}
                   </button>
 
                   <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
-                    Share Profile
+                    Message
                   </button>
                 </>
               )}
@@ -223,18 +268,18 @@ if (!user) {
         {/* Posts Grid */}
         {activeTab === "posts" && (
           <div className="grid grid-cols-3 gap-1">
-            {userPosts.map((post) => (
-              <div key={post.post_id} className="relative aspect-square group cursor-pointer">
-                <img
-                  src={post.media_url || "/placeholder.svg"}
-                  alt="Post"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-
-            {userPosts.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No posts yet.</p>
+            {userPosts.length > 0 ? (
+                userPosts.map((post) => (
+                    <div key={post.post_id} className="relative aspect-square group cursor-pointer">
+                        <img
+                          src={post.media_url || "/placeholder.svg"}
+                          alt="Post"
+                          className="w-full h-full object-cover"
+                        />
+                    </div>
+                ))
+            ) : (
+              <p className="text-center text-muted-foreground py-8 col-span-full">No posts yet.</p>
             )}
           </div>
         )}

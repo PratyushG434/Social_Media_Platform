@@ -2,16 +2,19 @@
 
 import { useState } from "react"
 import { useNotifications } from "./Notification-system";
-
 import API from "../service/api";
+import { useAuthStore } from "../store/useAuthStore";
+import Avatar from "./Avatar"; // Import Avatar
 
-export default function PostCreate({ currentUser, onNavigate }) {
+export default function PostCreate() {
   const [content, setContent] = useState("")
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
   const [isPosting, setIsPosting] = useState(false)
 
   const { addNotification } = useNotifications();
+  const { authUser } = useAuthStore();
+
   const handleMediaChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -31,13 +34,23 @@ export default function PostCreate({ currentUser, onNavigate }) {
     try {
       setIsPosting(true)
 
-      // create FormData (required for file uploads)
       const formData = new FormData()
-      if (mediaFile) formData.append("content", mediaFile)
-       
-      formData.append("content_type", mediaFile ? "image" : "text")
+      
+      // FIX: Use 'content' for the file as defined in backend routes
+      if (mediaFile) {
+        formData.append("content", mediaFile)
+      }
+      
+      // FIX: Use 'content' for text, which is handled correctly by formData
+      formData.append("content", content.trim());
+      
+      // Determine content type based on file presence
+      let contentType = 'text';
+      if (mediaFile) {
+        contentType = mediaFile.type.startsWith('video') ? 'video' : 'image';
+      }
+      formData.append("content_type", contentType);
 
-      // call the API
       const response = await API.createPost(formData)
 
       if (!response?.isSuccess) throw new Error("Failed to create post")
@@ -48,11 +61,11 @@ export default function PostCreate({ currentUser, onNavigate }) {
         message: "Your post was successfully uploaded!"
       })
 
-      // reset UI
       setContent("")
       setMediaFile(null)
       setMediaPreview(null)
-      onNavigate?.("dashboard")
+      // Redirect or navigate back after successful post (assuming use of navigate outside this component)
+      // onNavigate?.("dashboard") 
 
     } catch (err) {
       addNotification?.({
@@ -65,7 +78,6 @@ export default function PostCreate({ currentUser, onNavigate }) {
     }
   }
 
-
   const removeMedia = () => {
     setMediaFile(null)
     setMediaPreview(null)
@@ -77,7 +89,7 @@ export default function PostCreate({ currentUser, onNavigate }) {
       <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-border p-4 z-10">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => onNavigate("dashboard")}
+            onClick={() => window.history.back()}
             className="text-muted-foreground hover:text-card-foreground transition-colors"
           >
             <span className="text-xl">←</span>
@@ -98,14 +110,15 @@ export default function PostCreate({ currentUser, onNavigate }) {
         <div className="bg-card rounded-lg border border-border p-4">
           {/* User Info */}
           <div className="flex items-center space-x-3 mb-4">
-            <img
-              src={currentUser?.profilePic || "/placeholder.svg?height=40&width=40&query=user+profile"}
-              alt={currentUser?.displayName}
-              className="w-10 h-10 rounded-full object-cover"
+            {/* FIX: Use Avatar component */}
+            <Avatar 
+                src={authUser?.profile_pic_url}
+                name={authUser?.display_name || authUser?.username}
+                className="w-10 h-10"
             />
             <div>
-              <p className="font-semibold text-card-foreground">{currentUser?.displayName}</p>
-              <p className="text-sm text-muted-foreground">@{currentUser?.username}</p>
+              <p className="font-semibold text-card-foreground">{authUser?.display_name}</p>
+              <p className="text-sm text-muted-foreground">@{authUser?.username}</p>
             </div>
           </div>
 
@@ -156,29 +169,9 @@ export default function PostCreate({ currentUser, onNavigate }) {
           </form>
         </div>
 
-        {/* Recent Posts */}
+        {/* Placeholder for Recent Posts */}
         <div className="mt-6">
-          <h3 className="text-lg font-semibold text-card-foreground mb-4">Your Recent Posts</h3>
-          <div className="space-y-4">
-            <div className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-center space-x-3 mb-3">
-                <img
-                  src={currentUser?.profilePic || "/placeholder.svg?height=32&width=32&query=user+profile"}
-                  alt={currentUser?.displayName}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <div>
-                  <p className="font-medium text-card-foreground text-sm">{currentUser?.displayName}</p>
-                  <p className="text-xs text-muted-foreground">2 hours ago</p>
-                </div>
-              </div>
-              <p className="text-card-foreground text-sm">Just finished an amazing workout! 💪</p>
-              <div className="flex items-center space-x-4 mt-3 text-xs text-muted-foreground">
-                <span>❤️ 23</span>
-                <span>💬 5</span>
-              </div>
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold text-card-foreground mb-4">Your Recent Posts (Placeholder)</h3>
         </div>
       </div>
     </div>

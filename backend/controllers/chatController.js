@@ -1,12 +1,9 @@
-// backend/controllers/chatController.js
-
-const chatService = require('../services/chatService'); // Import the chat service
+const chatService = require('../services/chatService');  
+const messageService = require('../services/messageService');
 
 /**
  * Initiates a new chat between the authenticated user and a target user,
  * or returns the existing chat if it already exists.
- * This route is protected.
- * Expects 'targetUserId' in the request body.
  */
 exports.createChat = async (req, res) => {
     const requesterId = req.user.user_id; // The authenticated user
@@ -45,15 +42,7 @@ exports.createChat = async (req, res) => {
     }
 };
 
-/**
- * Get all chats for the authenticated user.
- * (Will be implemented in the next step)
- */
-exports.getUserChats = async (req, res) => {
-    // Placeholder for getting all chats of the authenticated user
-    res.status(501).json({ message: 'Not Implemented: Get User Chats' });
-};
-
+ 
 
 exports.getUserChats = async (req, res) => {
     const userId = req.user.user_id; // The authenticated user
@@ -72,5 +61,67 @@ exports.getUserChats = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(500).json({ message: 'Server error fetching user chats.' });
+    }
+};
+
+
+/**
+ * Sends a new message within a specific chat.
+ * This route is protected. The sender must be a participant in the chat.
+ * Expects 'content' in the request body.
+ */
+exports.sendMessage = async (req, res) => {
+    const senderId = req.user.user_id;
+    const { chatId } = req.params;
+    const { content } = req.body;
+
+    if (!content || content.trim() === '') {
+        return res.status(400).json({ message: 'Message content cannot be empty.' });
+    }
+
+    try {
+        // --- MODIFIED: Use messageService.sendMessage ---
+        const newMessage = await messageService.sendMessage(parseInt(chatId), senderId, content);
+
+        res.status(201).json({
+            message: 'Message sent successfully!',
+            message: newMessage // Return the rich message object
+        });
+
+    } catch (error) {
+        console.error('Error sending message:', error);
+        if (error.message === 'Message content cannot be empty.') {
+            return res.status(400).json({ message: error.message });
+        }
+        if (error.message === 'Chat not found or user is not a participant.') {
+            return res.status(403).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Server error sending message.' });
+    }
+};
+
+/**
+ * Gets all messages for a specific chat.
+ * This route is protected. The requester must be a participant in the chat.
+ */
+exports.getChatMessages = async (req, res) => {
+    const currentUserId = req.user.user_id;
+    const { chatId } = req.params;
+
+    try {
+        // --- MODIFIED: Use messageService.getChatMessages ---
+        const messages = await messageService.getChatMessages(parseInt(chatId), currentUserId);
+
+        res.status(200).json({
+            message: 'Chat messages fetched successfully!',
+            messages: messages
+        });
+
+    } catch (error) {
+        console.error('Error fetching chat messages:', error);
+        if (error.message === 'Chat not found or user is not a participant.') {
+            return res.status(403).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Server error fetching chat messages.' });
     }
 };
