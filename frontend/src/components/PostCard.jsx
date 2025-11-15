@@ -23,7 +23,9 @@ export default function PostCard({ post, onLikeToggle }) {
   const [comments, setComments] = useState([])
   const [commentsLoaded, setCommentsLoaded] = useState(false)
   const [loadingComments, setLoadingComments] = useState(false)
+  const [showMenu, setShowMenu] = useState(false);
 
+  const isPostOwner = authUser && authUser.user_id === post.user_id;
   // Determine if we are currently viewing the post detail page
   const isDetailPage = location.pathname.startsWith(`/post/${post.post_id}`);
 
@@ -40,6 +42,42 @@ export default function PostCard({ post, onLikeToggle }) {
         navigate(`/post/${post.post_id}`);
     }
   };
+
+    const handleDeletePost = async () => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    
+    try {
+        const response = await API.deletePost(post.post_id);
+        
+        if (!response?.isSuccess) throw new Error("Failed to delete post.");
+
+        addNotification?.({ 
+            type: "success", 
+            title: "Post Deleted", 
+            message: "Your post was successfully removed." 
+        });
+
+        // Redirect user if they are on the detail page, otherwise refresh the feed
+        if (isDetailPage) {
+            navigate('/dashboard', { replace: true });
+        } else {
+            // Simple force reload or local state manipulation required here 
+            // In a robust app, parent component (Feed) would handle post removal from its state.
+            window.location.reload(); 
+        }
+
+    } catch (err) {
+        console.error("Deletion error:", err);
+        addNotification?.({ 
+            type: "error", 
+            title: "Deletion Failed", 
+            message: err.message || "Failed to delete post." 
+        });
+    } finally {
+        setShowMenu(false);
+    }
+  };
+
 
   const handleToggleComments = async () => {
     if (showComments) {
@@ -99,6 +137,30 @@ export default function PostCard({ post, onLikeToggle }) {
             <p className="text-xs text-gray-500">@{post.username} • {new Date(post.timestamp).toLocaleDateString()}</p>
           </div>
         </div>
+        {/* --- NEW: Kebab Menu for Delete --- */}
+        {isPostOwner && (
+            <div className="relative">
+                <button 
+                    onClick={() => setShowMenu(prev => !prev)}
+                    className="p-2 rounded-full hover:bg-muted transition-colors"
+                >
+                    <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm-2 4a2 2 0 104 0 2 2 0 00-4 0z"/></svg>
+                </button>
+
+                {showMenu && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-border z-10">
+                        <button 
+                            onClick={handleDeletePost}
+                            className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-red-50 rounded-lg"
+                        >
+                            Delete Post
+                        </button>
+                    </div>
+                )}
+            </div>
+        )}
+        {/* --- END NEW --- */}
+
       </div>
 
       {/* Post Content and Media (Clickable area to go to detail) */}
