@@ -4,7 +4,6 @@ import { useState } from "react";
 import API from "../service/api";
 import { useNavigate } from "react-router-dom";
 import { useNotifications , NotificationProvider} from "./Notification-system";
-// TODO: adjust this import to match your auth store hook location
 import { useAuthStore } from "../store/useAuthStore";
 
 const  RegisterContent = () => {
@@ -20,8 +19,9 @@ const  RegisterContent = () => {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { login, isLoggingIn, authUser } = useAuthStore();
+  const { login } = useAuthStore();
   const { addNotification } = useNotifications();
 
   const handleChange = (e) => {
@@ -40,10 +40,12 @@ const  RegisterContent = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (formData.password.length < 8) { // Updated to match backend requirement
+      setError("Password must be at least 8 characters long.");
       return;
     }
+    
+    setIsLoading(true);
 
     try {
       const response = await API.registerUser({
@@ -53,16 +55,14 @@ const  RegisterContent = () => {
         dob : formData.dob,
         display_name : formData.displayName
       });
-      const mongoUser = response?.data?.user;
+      const user = response?.data?.user;
 
-      if (!mongoUser) {
+      if (!user) {
         throw new Error("Invalid signup response");
       }
 
-      // send data to auth store (login the user)
-      await login(mongoUser);
+      await login(user);
 
-      // notify and navigate
       addNotification({
         type: "success",
         title: "Signed Up",
@@ -71,18 +71,20 @@ const  RegisterContent = () => {
 
       setSuccess(true);
 
-      // short delay then navigate to dashboard
       setTimeout(() => {
         navigate("/dashboard");
-      }, 1200);
+      }, 500);
+      
     } catch (err) {
-      const message = err?.message || "Registration failed";
+      const message = err.response?.data?.message || err.message || "Registration failed";
       setError(message);
       addNotification({
         type: "error",
         title: "Registration Error",
         message,
       });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -209,9 +211,10 @@ const  RegisterContent = () => {
 
             <button
               type="submit"
-              className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              disabled={isLoading}
+              className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              Sign Up
+              {isLoading ? "Signing Up..." : "Sign Up"}
             </button>
           </form>
 

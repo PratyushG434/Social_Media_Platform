@@ -11,7 +11,7 @@ export default function Profile() {
   const userId = paramId ? parseInt(paramId, 10) : null; 
 
   const [user, setUser] = useState(null);
-  const [userPosts, setUserPosts] = useState([]); // This will store user.posts
+  const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
 
@@ -51,27 +51,18 @@ export default function Profile() {
           throw new Error("Failed to fetch user data.");
       }
 
-      // --- FIX 3: Single point of access for all user data ---
-      // All data (user, posts, followers, following) is now reliably nested under response.data.user
-      const userData = response.data.user;
+      const { user: userData, posts: userPostsData, followers: userFollowers, following: userFollowing } = response.data;
       
-      if (!userData) throw new Error("User data is missing in response.");
-
-      // Set the main user state
       setUser(userData);
-      // Set the posts state using the nested array
-      setUserPosts(userData.posts || []); 
+      setUserPosts(userPostsData || []);
 
-      // Set follow states
-      if (!isOwnProfile && authUser && userData.followers) {
+      if (!isOwnProfile && authUser && userData) {
           const currentAuthUserId = authUser.user_id;
-          
-          // Check 1: AuthUser follows Target User (AuthUser is in Target's followers list)
-          const isAuthUserFollowing = userData.followers?.some(f => f.user_id === currentAuthUserId) || false;
+
+          const isAuthUserFollowing = userFollowers?.some(f => f.user_id === currentAuthUserId) || false;
           setIsFollowing(isAuthUserFollowing);
           
-          // Check 2: Target User follows AuthUser (Target User's following list contains AuthUser's ID)
-          const doesTargetFollowMe = userData.following?.some(f => f.user_id === currentAuthUserId) || false;
+          const doesTargetFollowMe = userFollowing?.some(f => f.user_id === currentAuthUserId) || false;
           setFollowsMe(doesTargetFollowMe);
       } else {
           setIsFollowing(false); 
@@ -86,7 +77,6 @@ export default function Profile() {
     }
   }, [userId, isOwnProfile, authUser, navigate, paramId]); 
 
-  // Effect hook to call the fetch function when relevant dependencies change
   useEffect(() => {
     if ( (isOwnProfile && authUser?.user_id) || (!isOwnProfile && userId) ) {
         fetchUserProfile();
@@ -101,16 +91,13 @@ export default function Profile() {
   }, [userId, isOwnProfile, authUser, paramId, navigate, fetchUserProfile]);
 
 
-  // --- Follow/Unfollow Handler ---
   const handleFollowToggle = useCallback(async () => {
     if (!user || !authUser) return; 
 
     const targetUserId = user.user_id;
 
-    // Optimistically update the UI
     setIsFollowing(prev => !prev);
     
-    // Optimistically update followers count in state
     setUser(prevUser => {
         if (!prevUser) return null;
         const newFollowers = isFollowing 
@@ -129,7 +116,6 @@ export default function Profile() {
     } catch (err) {
       console.error("Follow toggle error:", err);
       setIsFollowing(prev => !prev);
-      // Revert followers count if needed, or simply re-fetch profile data.
     }
   }, [user, authUser, isFollowing]);
 

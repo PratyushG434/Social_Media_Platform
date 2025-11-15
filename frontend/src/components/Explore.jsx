@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate } from "react-router-dom";
 import API from "../service/api";
-import Avatar from "./Avatar"; // Import Avatar
+import Avatar from "./Avatar";
 
 export default function Explore() {
   const [activeTab, setActiveTab] = useState("trending")
@@ -12,11 +12,9 @@ export default function Explore() {
   const { authUser } = useAuthStore();
   const navigate = useNavigate();
 
-  // --- NEW STATES for Discovery Feed ---
   const [discoveryPosts, setDiscoveryPosts] = useState([]);
   const [loadingDiscovery, setLoadingDiscovery] = useState(true);
 
-  // --- Search States (from previous fix) ---
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false); 
@@ -28,7 +26,7 @@ export default function Explore() {
     const fetchDiscovery = async () => {
       setLoadingDiscovery(true);
       try {
-        const response = await API.getDiscoveryFeed(); // FIX: Call the correct discovery endpoint
+        const response = await API.getDiscoveryFeed(); 
         if (response.isSuccess) {
           setDiscoveryPosts(response.data.posts || []);
         }
@@ -39,12 +37,11 @@ export default function Explore() {
       }
     };
     fetchDiscovery();
-  }, [activeTab]); // Runs when the activeTab changes to 'trending'
+  }, [activeTab]);
 
 
   // --- Effect 2: Debouncing Search (People Tab) ---
   useEffect(() => {
-    // ... (Your existing search logic for API.searchUsers) ...
     if (searchQuery.trim().length < 2) {
       setSearchResults([]);
       setHasSearched(false);
@@ -75,7 +72,9 @@ export default function Explore() {
 
   // Mock data (keep for other tabs if not using API yet)
   const trendingHashtags = [
-    // ...
+    { tag: "#DigitalArt", posts: "234K" },
+    { tag: "#TechTrends", posts: "189K" },
+    { tag: "#FoodieLife", posts: "567K" },
   ]
 
   const tabs = [
@@ -86,10 +85,9 @@ export default function Explore() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      {/* Header and Search Bar (omitted for brevity) */}
+      {/* Header and Search Bar */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-4">Explore</h1>
-        {/* Search Bar */}
         <div className="relative mb-6">
           <input
             type="text"
@@ -102,7 +100,6 @@ export default function Explore() {
             <span className="text-xl">🔍</span>
           </button>
         </div>
-        {/* Tabs */}
         <div className="flex space-x-1 bg-muted p-1 rounded-xl">
           {tabs.map((tab) => (
             <button
@@ -126,11 +123,11 @@ export default function Explore() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {discoveryPosts.map((post) => (
               <div
-                key={post.post_id} // FIX: Use post_id
+                key={post.post_id} 
                 className="group relative aspect-square bg-card rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200"
               >
                 <img
-                  src={post.media_url || "/placeholder.svg"} // FIX: Use media_url
+                  src={post.media_url || "/placeholder.svg"} 
                   alt="Trending post"
                   className="w-full h-full object-cover"
                 />
@@ -169,13 +166,12 @@ export default function Explore() {
 
       {activeTab === "people" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* --- SEARCH RESULTS --- */}
           {isSearching && <p className="text-muted-foreground">Searching...</p>}
           {!isSearching && hasSearched && searchResults.length === 0 && (
             <p className="text-muted-foreground col-span-full text-center">No users found for "{searchQuery}"</p>
           )}
 
-          {!isSearching && searchResults.map((user) => (
+          {!isSearching && searchResults.length > 0 && searchResults.map((user) => (
             <div
               key={user.user_id}
               onClick={() => navigate(`/profile/${user.user_id}`)}
@@ -202,8 +198,22 @@ export default function Explore() {
       )}
 
       {activeTab === "hashtags" && (
-        // ... (Hashtag mock data rendering)
-        <p className="text-center p-8 text-muted-foreground">Hashtag search coming soon!</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {trendingHashtags.map((hashtag, index) => (
+            <div
+              key={index}
+              className="bg-card rounded-2xl p-6 border border-border hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-primary mb-2">{hashtag.tag}</h3>
+                  <p className="text-muted-foreground">{hashtag.posts} posts</p>
+                </div>
+                <div className="text-3xl">📈</div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

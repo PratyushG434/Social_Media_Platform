@@ -12,7 +12,6 @@ export default function Avatar({ src, name, className = 'w-11 h-11' }) {
   } else {
     const initials = getInitials(name);
     const backgroundColor = generateColorFromString(name);
-
     return (
       <div
         className={`${className} rounded-full flex items-center justify-center text-white font-bold select-none`}
