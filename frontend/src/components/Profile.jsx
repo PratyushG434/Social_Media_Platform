@@ -7,9 +7,7 @@ import API from "../service/api";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import Avatar from "./Avatar";
-
 import PostCard from "./PostCard.jsx"
-
 import { useChatStore } from "../store/useChatStore"; // CRITICAL: Import Chat Store
 import { useNotifications } from "./Notification-system"; // CRITICAL: Import Notifications
 
