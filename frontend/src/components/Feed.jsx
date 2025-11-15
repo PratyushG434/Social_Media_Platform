@@ -178,7 +178,7 @@ const FeedContent = () => {
   return (
     <div className="max-w-2xl mx-auto pb-6">
       {/* Header and Filter Tabs */}
-      <div className="sticky top-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 backdrop-blur-md border-b border-border/50 p-4 z-10 shadow-sm">
+      <div className="sticky top-0 from-primary/10 via-secondary/10 to-primary/10 backdrop-blur-md border-b border-border/50 p-4 z-10 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             StreamSocial

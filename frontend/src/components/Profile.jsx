@@ -1,6 +1,5 @@
 "use client";
 
-<<<<<<< HEAD
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -8,14 +7,9 @@ import API from "../service/api";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import Avatar from "./Avatar";
-=======
-import { useEffect, useState, useCallback } from "react"
-import API from "../service/api"
-import { useAuthStore } from "../store/useAuthStore"
-import { useNavigate, useParams } from "react-router-dom"
-import Avatar from "./Avatar"; 
-import PostCard from "./PostCard"; 
->>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
+
+
+
 
 export default function Profile() {
   const { userId: paramId } = useParams();
@@ -61,21 +55,6 @@ export default function Profile() {
         : await API.getUserProfile({ userId: targetId });
 
       if (!response?.isSuccess) {
-<<<<<<< HEAD
-        if (response?.code === 404) {
-          throw new Error("User not found.");
-        }
-        throw new Error("Failed to fetch user data.");
-      }
-
-      const {
-        user: userData,
-        posts: userPostsData,
-        followers: userFollowers,
-        following: userFollowing,
-      } = response.data;
-
-=======
           if (response?.code === 404) {
               return navigate('/404');
           }
@@ -87,7 +66,6 @@ export default function Profile() {
       const userFollowers = userData.followers || [];
       const userFollowing = userData.following || [];
       
->>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
       setUser(userData);
       
       const postsWithLikeStatus = userPostsData.map(p => ({
@@ -136,19 +114,6 @@ export default function Profile() {
 
     const targetUserId = user.user_id;
 
-<<<<<<< HEAD
-    // optimistic UI
-    setIsFollowing((prev) => !prev);
-
-    setUser((prevUser) => {
-      if (!prevUser) return null;
-      const prevFollowers = prevUser.followers || [];
-      const newFollowers = isFollowing
-        ? prevFollowers.filter((f) => f.user_id !== authUser.user_id)
-        : [...prevFollowers, { user_id: authUser.user_id, username: authUser.username }];
-
-      return { ...prevUser, followers: newFollowers };
-=======
     setIsFollowing(prev => !prev);
     
     setUser(prevUser => {
@@ -159,7 +124,6 @@ export default function Profile() {
             ? currentFollowers.filter(f => f.user_id !== authUser.user_id) 
             : [...currentFollowers, { user_id: authUser.user_id, username: authUser.username }];
         return { ...prevUser, followers: newFollowers }; 
->>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
     });
 
     try {
@@ -170,12 +134,7 @@ export default function Profile() {
       setIsFollowing(following);
     } catch (err) {
       console.error("Follow toggle error:", err);
-<<<<<<< HEAD
-      // revert if failed
-      setIsFollowing((prev) => !prev);
-=======
       setIsFollowing(prev => !prev); // Revert on error
->>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
     }
   }, [user, authUser, isFollowing]);
 
@@ -245,8 +204,6 @@ export default function Profile() {
     );
   }
 
-<<<<<<< HEAD
-=======
   // --- Helper component for the Grid View (with Video Fix) ---
   const GridView = ({ posts }) => (
     <div className="grid grid-cols-3 gap-1">
@@ -298,7 +255,6 @@ export default function Profile() {
   // --- END Helper Components ---
 
 
->>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
@@ -457,28 +413,6 @@ export default function Profile() {
         
         {/* Posts Content (Using View Modes) */}
         {activeTab === "posts" && (
-<<<<<<< HEAD
-          <div className="grid grid-cols-3 gap-1">
-            {userPosts.length > 0 ? (
-              userPosts.map((post) => (
-                <div
-                  key={post.post_id}
-                  className="relative aspect-square group cursor-pointer"
-                >
-                  <img
-                    src={post.media_url || "/placeholder.svg"}
-                    alt="Post"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-muted-foreground py-8 col-span-full">
-                No posts yet.
-              </p>
-            )}
-          </div>
-=======
             <div className="flex flex-col">
                 {userPosts.length > 0 ? (
                     <>
@@ -489,7 +423,6 @@ export default function Profile() {
                     <p className="text-center text-muted-foreground py-8 col-span-full">No posts yet.</p>
                 )}
             </div>
->>>>>>> 844d3adc1dc1f331761f9056046ded5bc37c3fe3
         )}
 
         {activeTab === "tagged" && (
