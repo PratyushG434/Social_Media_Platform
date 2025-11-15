@@ -1,5 +1,3 @@
-// src/store/useChatStore.js
-
 import { create } from "zustand";
 import API from "../service/api";
 import { useAuthStore } from "./useAuthStore";
@@ -13,6 +11,7 @@ export const useChatStore = create((set, get) => ({
   // Loading state
   isChatsLoading: false,
   isMessagesLoading: false,
+  _messageListener: null,
 
   // State to store user ID for initiating a chat after navigation (from profile page)
   targetUserIdForNewChat: null,
@@ -108,6 +107,7 @@ export const useChatStore = create((set, get) => ({
   sendMessage: (content) => {
     const { selectedChat } = get();
     const socket = useAuthStore.getState().socket;
+    if (!socket) return;
 
     if (!selectedChat || !socket || !socket.connected) {
       console.error("Socket not connected or no chat selected.");

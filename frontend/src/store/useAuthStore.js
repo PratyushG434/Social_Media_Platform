@@ -1,3 +1,4 @@
+// useAuthStore.jsx
 import { create } from "zustand";
 import API from "../service/api";
 import { io } from "socket.io-client";
@@ -8,14 +9,12 @@ export const useAuthStore = create((set, get) => ({
   authUser: null,
   isRegistering: false,
   isLoggingIn: false,
-  isUpdatingProfile: false,
   isCheckingAuth: true,
   onlineUsers: [],
   socket: null,
 
   checkAuth: async () => {
     set({ isCheckingAuth: true });
-
     try {
       const res = await API.checkAuth();
       if (res.isSuccess) {
@@ -27,7 +26,6 @@ export const useAuthStore = create((set, get) => ({
         get().disconnectSocket(); // Disconnect if auth fails
       }
     } catch (error) {
-      console.log("Error in checkAuth:", error);
       set({ authUser: null });
       get().disconnectSocket(); // Disconnect on error
     } finally {

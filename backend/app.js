@@ -25,15 +25,14 @@ const io = new Server(server, {
 });
 
 const corsOptions = {
-  origin: "http://localhost:3000", // <--- IMPORTANT: Replace with your actual frontend URL if different
-  credentials: true, // Allow cookies/auth headers to be sent
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Allowed HTTP methods
-  allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+  origin: "http://localhost:3000",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
 
 app.use(cookieParser());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -49,7 +48,6 @@ async function testDbConnection() {
       "[DB Test]: Connection FAILED. Check credentials and server status."
     );
     console.error("Error details:", error.message);
-    // process.exit(1);
   }
 }
 
@@ -65,7 +63,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/stories", storyRoutes);
 app.use("/api/chats", chatRoutes);
-app.use("/api/notifications", notificationRoutes);
 
 require("./utils/cleanUpStories.js");
 
