@@ -99,4 +99,8 @@ export const SERVICE_URLS = {
     data: { text, image },
   }),
   getUsersForSidebar: { url: "/chatlist", method: "GET" },
+
+  // NOTIFICATIONS (NEW)
+  getNotifications: { url: "/notifications", method: "GET" },
+  markNotificationsRead: { url: "/notifications/read", method: "PATCH" },
 };

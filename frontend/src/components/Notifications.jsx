@@ -1,95 +1,52 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
+import API from "../service/api"
+import { useNotifications } from "./Notification-system" // Assuming you want toast notifications for errors
 
-export default function Notifications({ currentUser, onNavigate }) {
+export default function Notifications() {
   const [activeTab, setActiveTab] = useState("all")
+  const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { addNotification } = useNotifications();
 
-  // Mock notifications data
-  const [notifications] = useState([
-    {
-      id: 1,
-      type: "like",
-      user: {
-        id: 2,
-        username: "sarah_wilson",
-        displayName: "Sarah Wilson",
-        profilePic: "/man-photographer.png",
-      },
-      content: "liked your post",
-      postPreview: "/vibrant-street-art.png",
-      timestamp: "2m ago",
-      isRead: false,
-    },
-    {
-      id: 2,
-      type: "comment",
-      user: {
-        id: 3,
-        username: "mike_photo",
-        displayName: "Mike Photography",
-        profilePic: "/profile.jpg",
-      },
-      content: 'commented: "Amazing shot! 📸"',
-      postPreview: "/vibrant-street-art.png",
-      timestamp: "5m ago",
-      isRead: false,
-    },
-    {
-      id: 3,
-      type: "follow",
-      user: {
-        id: 4,
-        username: "foodie_anna",
-        displayName: "Anna Foodie",
-        profilePic: "/man-photographer.png",
-      },
-      content: "started following you",
-      timestamp: "1h ago",
-      isRead: true,
-    },
-    {
-      id: 4,
-      type: "story_reaction",
-      user: {
-        id: 5,
-        username: "travel_tom",
-        displayName: "Tom Explorer",
-        profilePic: "/vibrant-street-art.png",
-      },
-      content: "reacted ❤️ to your story",
-      timestamp: "2h ago",
-      isRead: true,
-    },
-    {
-      id: 5,
-      type: "mention",
-      user: {
-        id: 6,
-        username: "art_emma",
-        displayName: "Emma Artist",
-        profilePic: "/profile.jpg",
-      },
-      content: "mentioned you in a comment",
-      postPreview: "/vibrant-street-art.png",
-      timestamp: "3h ago",
-      isRead: true,
-    },
-    {
-      id: 6,
-      type: "like",
-      user: {
-        id: 7,
-        username: "fitness_joe",
-        displayName: "Joe Fitness",
-        profilePic: "/man-photographer.png",
-      },
-      content: "and 12 others liked your post",
-      postPreview: "/vibrant-street-art.png",
-      timestamp: "1d ago",
-      isRead: true,
-    },
-  ])
+  // --- Data Fetching ---
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await API.getNotifications();
+      if (!response?.isSuccess) throw new Error("Failed to load notifications.");
+      
+      // Map BE fields to FE display names if necessary, and ensure a unique key
+      const processed = response.data.notifications.map(n => ({
+          id: n.notification_id,
+          type: n.type,
+          user: {
+            id: n.sender_id,
+            username: n.sender_username,
+            displayName: n.sender_display_name,
+            profilePic: n.sender_profile_pic_url,
+          },
+          content: n.content,
+          postPreview: n.post_media_url, // Use post_media_url for preview
+          timestamp: new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isRead: n.is_read,
+      }));
+
+      setNotifications(processed);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+      addNotification({ type: 'error', title: 'Loading Error', message: 'Failed to fetch notifications.' });
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [addNotification]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -122,17 +79,19 @@ export default function Notifications({ currentUser, onNavigate }) {
   }
 
   const handleNotificationClick = (notification) => {
-    if (notification.type === "follow") {
-      onNavigate("profile")
-    } else if (notification.postPreview) {
-      // Navigate to individual post
-      alert("Navigate to post")
-    }
+    // Basic Mark as Read logic (since we don't handle individual read status easily yet)
+    // Here you would navigate to the post/profile/story
+    console.log("Navigate to related content for:", notification);
   }
 
-  const markAllAsRead = () => {
-    // Mock marking all as read
-    alert("All notifications marked as read")
+  const markAllAsRead = async () => {
+    try {
+        await API.markNotificationsRead();
+        setNotifications(prev => prev.map(n => ({...n, isRead: true})));
+        addNotification({ type: 'success', title: 'Success', message: 'All notifications marked as read.' });
+    } catch (err) {
+        addNotification({ type: 'error', title: 'Error', message: 'Failed to mark as read.' });
+    }
   }
 
   const filteredNotifications = getFilteredNotifications()
@@ -188,8 +147,13 @@ export default function Notifications({ currentUser, onNavigate }) {
           ))}
         </div>
       </div>
+      
+      {loading && (
+        <div className="text-center py-12 text-muted-foreground">Loading notifications...</div>
+      )}
 
       {/* Notifications List */}
+      {!loading && (
       <div className="divide-y divide-border">
         {filteredNotifications.length > 0 ? (
           filteredNotifications.map((notification) => (
@@ -227,14 +191,14 @@ export default function Notifications({ currentUser, onNavigate }) {
                     {/* Post preview */}
                     {notification.postPreview && (
                       <img
-                        src={notification.postPreview || "/placeholder.svg"}
+                        src={notification.postPreview}
                         alt="Post preview"
                         className="w-12 h-12 rounded object-cover ml-3"
                       />
                     )}
                   </div>
 
-                  {/* Follow button for follow notifications */}
+                  {/* Follow button for follow notifications - Placeholder logic */}
                   {notification.type === "follow" && (
                     <button className="mt-2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm hover:bg-primary/90 transition-colors">
                       Follow Back
@@ -257,44 +221,14 @@ export default function Notifications({ currentUser, onNavigate }) {
           </div>
         )}
       </div>
+      )}
 
-      {/* Activity suggestions */}
-      {filteredNotifications.length > 0 && (
+      {/* Activity suggestions (Placeholder - kept for UI filler) */}
+      {!loading && filteredNotifications.length > 0 && (
         <div className="p-4 bg-card m-4 rounded-lg border border-border">
           <h3 className="font-semibold text-card-foreground mb-3">Suggested for you</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <img
-                  src="/vibrant-street-art.png"
-                  alt="Suggested user"
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div>
-                  <p className="font-medium text-card-foreground">Alex Developer</p>
-                  <p className="text-sm text-muted-foreground">Followed by sarah_wilson</p>
-                </div>
-              </div>
-              <button className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm hover:bg-primary/90 transition-colors">
-                Follow
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <img
-                  src="/trending-art.jpg"
-                  alt="Suggested user"
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div>
-                  <p className="font-medium text-card-foreground">Lisa Designer</p>
-                  <p className="text-sm text-muted-foreground">Followed by mike_photo</p>
-                </div>
-              </div>
-              <button className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm hover:bg-primary/90 transition-colors">
-                Follow
-              </button>
-            </div>
+            {/* ... (mock suggestions) ... */}
           </div>
         </div>
       )}
