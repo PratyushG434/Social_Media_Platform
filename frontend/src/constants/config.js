@@ -63,10 +63,10 @@ export const SERVICE_URLS = {
   }),
 
   // USERS & PROFILE
-  searchUsers: (query) => ({
+  searchUsers: ({searchQuery}) => ({
     url: "/users/search",
     method: "GET",
-    params: { q: query },
+    params: { q: searchQuery },
   }),
   getSuggestedUsers: { url: "/users/suggestions", method: "GET" },
   getMyProfile: { url: "/users/me", method: "GET" },

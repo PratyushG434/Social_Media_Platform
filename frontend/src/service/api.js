@@ -123,7 +123,7 @@ for (const [key, value] of Object.entries(SERVICE_URLS)) {
   
       
      if (axiosConfig.method.toLowerCase() === 'get') {
-  axiosConfig.params = config.params || {};
+  axiosConfig.params = serviceConfig.params || {};
 } else {
   // ✅ Allow FormData to pass through directly
   if (body instanceof FormData) {
