@@ -8,13 +8,13 @@ const upload = require("../middleware/upload.js")
 
 router.get('/feed', protect, postController.getFollowingPostsFeed);
 router.get('/liked', protect, postController.getLikedPosts);
+router.get('/videos', postController.getVideoPosts);
 router.get("/:id", postController.getPostById);
 router.get('/', protect, postController.getDiscoveryFeedPosts);
 router.post("/", protect, upload.single('content'), postController.createPost); // add protect here 
 router.patch("/:id", protect, upload.single('content'), postController.updatePost);
 router.delete("/:id", protect, postController.deletePost);
 
-router.get('/shorts', postController.getVideoPosts);
 
 router.post("/:id/comments", protect, commentController.addComment);
 router.get('/:id/comments', commentController.getCommentsForPost);

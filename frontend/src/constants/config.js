@@ -38,6 +38,10 @@ export const SERVICE_URLS = {
   getHomeFeed: { url: "/posts/feed", method: "GET" }, // Following Feed
   getDiscoveryFeed: { url: "/posts", method: "GET" }, // Discovery/Explore Feed
   getLikedPosts: { url: "/posts/liked", method: "GET" },
+    getVideos:{
+    url: "/posts/videos",
+    method: "GET"
+  },
   getPostById: (postId) => ({
     url: `/posts/${postId}`,
     method: "GET",
@@ -61,6 +65,7 @@ export const SERVICE_URLS = {
     url: `/posts/${postId}`,
     method: "DELETE",
   }),
+  
 
   // USERS & PROFILE
   searchUsers: ({ searchQuery }) => ({

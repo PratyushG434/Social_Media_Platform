@@ -198,7 +198,7 @@ const FeedContent = () => {
 
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide">
           {[
-            { id: "all", label: "Following", icon: "📱" },
+            { id: "all", label: "Following", icon: "" },
             { id: "liked", label: "Liked", icon: "❤️" },
           ].map((filter) => (
             <button key={filter.id} onClick={() => setFilterType(filter.id)} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${filterType === filter.id ? "bg-primary text-white shadow-lg shadow-primary/30" : "bg-white/60 text-gray-700 hover:bg-white/80"}`}>

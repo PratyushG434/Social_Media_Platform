@@ -10,7 +10,7 @@ import bellIcon from "../assets/icons/bell.png";
 import userIcon from "../assets/icons/user.png";
 import settingsIcon from "../assets/icons/setting.png"
 import logoutIcon from "../assets/icons/logout.png";
-
+import createIcon from "../assets/icons/write.png"
 
 export default function SideNavigation() {
   const { authUser, logout } = useAuthStore();
@@ -34,8 +34,8 @@ export default function SideNavigation() {
     },
      {
       id: "Post-create",
-      label: "Post Create",
-      iconUrl: userIcon,
+      label: "Create Post",
+      iconUrl: createIcon,
      
     },
     { id: "messages", label: "Messages", iconUrl: messengerIcon },

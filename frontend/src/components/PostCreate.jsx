@@ -5,6 +5,10 @@ import { useNotifications } from "./Notification-system";
 import API from "../service/api";
 import { useAuthStore } from "../store/useAuthStore";
 import Avatar from "./Avatar"; // Import Avatar
+import mapIcon from "../assets/icons/maps-and-flags.png"
+import cameraIcon from "../assets/icons/image.png"
+import emojiIcon from "../assets/icons/maps-and-flags.png"
+import timerIcon from "../assets/icons/sand-clock.png"
 
 export default function PostCreate() {
   const [content, setContent] = useState("")
@@ -38,47 +42,47 @@ export default function PostCreate() {
   }
 
   const handleAddLocation = () => {
-  if (!navigator.geolocation) {
-    addNotification?.({
-      type: "error",
-      title: "Location Error",
-      message: "Geolocation is not supported by your browser."
-    });
-    return;
-  }
-
-  setIsGettingLocation(true);
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { latitude, longitude } = position.coords;
-
-      // NEW: get location name from geocoding API
-      const placeName = await reverseGeocode(latitude, longitude);
-
-      if (placeName) {
-        const locationText = `📍 ${placeName}`;
-        setContent((prev) => (prev ? prev + "\n" + locationText : locationText));
-      } else {
-        // fallback to coordinates
-        const locationText = `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        setContent((prev) => (prev ? prev + "\n" + locationText : locationText));
-      }
-
-      setIsGettingLocation(false);
-    },
-    (error) => {
+    if (!navigator.geolocation) {
       addNotification?.({
         type: "error",
         title: "Location Error",
-        message: error?.message || "Unable to fetch your location."
+        message: "Geolocation is not supported by your browser."
       });
-      setIsGettingLocation(false);
+      return;
     }
-  );
-};
 
-  
+    setIsGettingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        // NEW: get location name from geocoding API
+        const placeName = await reverseGeocode(latitude, longitude);
+
+        if (placeName) {
+          const locationText = `📍 ${placeName}`;
+          setContent((prev) => (prev ? prev + "\n" + locationText : locationText));
+        } else {
+          // fallback to coordinates
+          const locationText = `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setContent((prev) => (prev ? prev + "\n" + locationText : locationText));
+        }
+
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        addNotification?.({
+          type: "error",
+          title: "Location Error",
+          message: error?.message || "Unable to fetch your location."
+        });
+        setIsGettingLocation(false);
+      }
+    );
+  };
+
+
   const handlePost = async (e) => {
     e.preventDefault()
     if (!content.trim() && !mediaFile) return
@@ -87,15 +91,15 @@ export default function PostCreate() {
       setIsPosting(true)
 
       const formData = new FormData()
-      
+
       // FIX: Use 'content' for the file as defined in backend routes
       if (mediaFile) {
         formData.append("content", mediaFile)
       }
-      
+
       // FIX: Use 'content' for text, which is handled correctly by formData
       formData.append("content", content.trim());
-      
+
       // Determine content type based on file presence
       let contentType = 'text';
       if (mediaFile) {
@@ -136,21 +140,21 @@ export default function PostCreate() {
   }
 
   const reverseGeocode = async (lat, lng) => {
-  try {
-    const res = await fetch(
-      `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=e9ff163643b44c78932108699598026b`
-    );
+    try {
+      const res = await fetch(
+        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=e9ff163643b44c78932108699598026b`
+      );
 
-    const data = await res.json();
-    if (data?.results?.length > 0) {
-      return data.results[0].formatted; // readable location name
-    } else {
+      const data = await res.json();
+      if (data?.results?.length > 0) {
+        return data.results[0].formatted; // readable location name
+      } else {
+        return null;
+      }
+    } catch {
       return null;
     }
-  } catch {
-    return null;
-  }
-};
+  };
 
 
   return (
@@ -181,10 +185,10 @@ export default function PostCreate() {
           {/* User Info */}
           <div className="flex items-center space-x-3 mb-4">
             {/* FIX: Use Avatar component */}
-            <Avatar 
-                src={authUser?.profile_pic_url}
-                name={authUser?.display_name || authUser?.username}
-                className="w-10 h-10"
+            <Avatar
+              src={authUser?.profile_pic_url}
+              name={authUser?.display_name || authUser?.username}
+              className="w-10 h-10"
             />
             <div>
               <p className="font-semibold text-card-foreground">{authUser?.display_name}</p>
@@ -225,7 +229,11 @@ export default function PostCreate() {
               <div className="flex items-center space-x-4">
                 <label className="cursor-pointer text-muted-foreground hover:text-card-foreground transition-colors">
                   <input type="file" accept="image/*,video/*" onChange={handleMediaChange} className="hidden" />
-                  <span className="text-xl">📷</span>
+                  <img
+                    src={cameraIcon}
+                    alt={"Photo"}
+                    className="w-5 h-5 object-contain"
+                  />
                 </label>
 
                 {/* 👇 Emoji button now works */}
@@ -244,9 +252,11 @@ export default function PostCreate() {
                   onClick={handleAddLocation}
                   disabled={isGettingLocation}
                 >
-                  <span className="text-xl">
-                    {isGettingLocation ? "⏳" : "📍"}
-                  </span>
+                   <img
+                    src={isGettingLocation? timerIcon : mapIcon }
+                    alt={"Photo"}
+                    className="w-5 h-5 object-contain"
+                  />
                 </button>
               </div>
               <div className="text-sm text-muted-foreground">{content.length}/280</div>
@@ -255,7 +265,7 @@ export default function PostCreate() {
             {/* 👇 Simple Emoji Picker (no external lib) */}
             {showEmojiPicker && (
               <div className="mt-2 p-2 border border-border rounded-lg bg-background flex flex-wrap gap-2">
-                {["😀","😅","😂","😍","😎","🤔","😭","🙏","🔥","🎉","❤️","👍"].map((emo) => (
+                {["😀", "😅", "😂", "😍", "😎", "🤔", "😭", "🙏", "🔥", "🎉", "❤️", "👍"].map((emo) => (
                   <button
                     key={emo}
                     type="button"
