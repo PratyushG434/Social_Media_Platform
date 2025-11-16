@@ -128,11 +128,11 @@ export default function PostCard({ post, onLikeToggle }) {
       {/* Post Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-3">
-          <div className="relative cursor-pointer" onClick={() => navigate(`/profile/${post.user_id}`)}>
+          <div className="relative cursor-pointer" onClick={() => navigate(`/dashboard/profile/${post.user_id}`)}>
             <Avatar src={post.profile_pic_url} name={post.display_name || post.username} className="w-11 h-11 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300" />
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
-          <div className="cursor-pointer" onClick={() => navigate(`/profile/${post.user_id}`)}>
+          <div className="cursor-pointer" onClick={() => navigate(`/dashboard/profile/${post.user_id}`)}>
             <p className="font-bold text-gray-800 hover:text-primary transition-colors">{post.display_name || post.username}</p>
             <p className="text-xs text-gray-500">@{post.username} • {new Date(post.timestamp).toLocaleDateString()}</p>
           </div>

@@ -173,7 +173,7 @@ export default function Explore() {
           {!isSearching && searchResults.length > 0 && searchResults.map((user) => (
             <div
               key={user.user_id}
-              onClick={() => navigate(`/profile/${user.user_id}`)}
+              onClick={() => navigate(`/dashboard/profile/${user.user_id}`)}
               className="bg-card rounded-2xl p-6 border border-border hover:shadow-lg transition-shadow duration-200 cursor-pointer"
             >
               <div className="text-center">

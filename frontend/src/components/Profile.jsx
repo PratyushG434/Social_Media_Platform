@@ -307,8 +307,16 @@ export default function Profile() {
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
+
       <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-border p-4 z-10">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center">
+          {/* <button
+            onClick={() => navigate(-1)}
+            className="text-muted-foreground hover:text-card-foreground transition-colors"
+          >
+            <span className="text-xl">←</span>
+          </button> */}
+
           <h1 className="text-xl font-semibold text-card-foreground">
             @{user.username}
           </h1>

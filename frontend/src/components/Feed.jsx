@@ -184,7 +184,7 @@ const FeedContent = () => {
 
               {!searchLoading &&
                 searchResults.map((user) => (
-                  <div key={user.user_id} onClick={() => { navigate(`/profile/${user.user_id}`); setShowSearchResults(false); }} className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer transition">
+                  <div key={user.user_id} onClick={() => { navigate(`/dashboard/profile/${user.user_id}`); setShowSearchResults(false); }} className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer transition">
                     <img src={user.profile_pic_url || "/placeholder.svg"} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
                     <div>
                       <p className="font-medium text-gray-800">{user.display_name}</p>
@@ -222,7 +222,7 @@ const FeedContent = () => {
 
           {!loadingSuggestions && suggestedUsers.map((user, index) => (
             <div key={user.user_id} className="flex items-center justify-between p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-all duration-300">
-              <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate(`/profile/${user.user_id}`)}>
+              <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate(`/dashboard/profile/${user.user_id}`)}>
                 <Avatar src={user.profile_pic_url} name={user.display_name || user.username} className="w-12 h-12" />
                 <div>
                   <p className="font-semibold text-gray-800">{user.display_name}</p>

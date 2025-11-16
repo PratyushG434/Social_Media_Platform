@@ -69,7 +69,7 @@ function NotificationItem({ notification, navigate, setNotifications, addNotific
         
         // Navigate
         if (notification.type === 'follow' && notification.user.id) {
-            navigate(`/profile/${notification.user.id}`);
+            navigate(`/dashboard/profile/${notification.user.id}`);
         } else if (notification.postId) {
             navigate(`/post/${notification.postId}`);
         }
