@@ -169,10 +169,7 @@ export default function PostCreate() {
           </form>
         </div>
 
-        {/* Placeholder for Recent Posts */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-card-foreground mb-4">Your Recent Posts (Placeholder)</h3>
-        </div>
+
       </div>
     </div>
   )

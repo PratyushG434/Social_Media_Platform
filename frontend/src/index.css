@@ -4,50 +4,50 @@
 
 @layer base {
   :root {
-    /* Papery Look - Light Mode */
-    --background: 30 15% 98%;   /* Soft off-white, slightly warm */
-    --foreground: 220 20% 18%;  /* Darker text, but not pure black */
-    --card: 30 15% 99%;         /* Slightly lighter than background, for depth */
-    --card-foreground: 220 20% 18%;
-    --popover: 30 15% 99%;
-    --popover-foreground: 220 20% 18%;
-    --primary: 262.1 60% 45%;   /* Slightly muted primary purple/blue */
-    --primary-foreground: 210 20% 98%; /* Off-white for contrast */
-    --secondary: 30 10% 90%;    /* Soft, light grey/beige for secondary elements */
-    --secondary-foreground: 220 20% 30%; /* Darker grey for secondary text */
-    --muted: 30 10% 95%;        /* Very light muted background */
-    --muted-foreground: 215 10% 45%; /* Softer muted text */
-    --accent: 30 10% 92%;       /* Light accent for hover/active states */
-    --accent-foreground: 220 20% 18%;
-    --destructive: 0 84.2% 60.2%; /* Keep destructive red */
-    --destructive-foreground: 210 40% 98%;
-    --border: 30 10% 85%;       /* Soft, light grey/brown border */
-    --input: 30 15% 95%;        /* Input background slightly off-white */
-    --ring: 262.1 60% 45%;      /* Ring color matches primary */
+    /* --- ENHANCED LIGHT MODE (Warmer, Softer) --- */
+    --background: 30 20% 97%;   /* Soft off-white/cream */
+    --foreground: 220 20% 16%;  /* Dark, ink-like text */
+    --card: 40 40% 98%;         /* Slightly creamy card, subtle variation */
+    --card-foreground: 220 20% 16%;
+    --popover: 40 40% 98%;
+    --popover-foreground: 220 20% 16%;
+    --primary: 250 60% 40%;     /* Muted Royal Purple/Indigo */
+    --primary-foreground: 30 20% 98%; /* Creamy white contrast */
+    --secondary: 30 15% 90%;    /* Soft, light beige/tan */
+    --secondary-foreground: 220 15% 40%; /* Mid-grey secondary text */
+    --muted: 30 15% 94%;        /* Lightest background for muted elements */
+    --muted-foreground: 215 10% 50%; /* Medium muted text */
+    --accent: 40 60% 75%;       /* Soft ochre/gold accent */
+    --accent-foreground: 220 20% 16%;
+    --destructive: 0 84.2% 50.2%; /* Slightly less neon red */
+    --destructive-foreground: 30 20% 98%;
+    --border: 30 10% 80%;       /* Subtle coffee stain color */
+    --input: 30 20% 95%;        /* Input background slightly softer */
+    --ring: 250 60% 40%;
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Papery Look - Dark Mode (subtle, warm dark tones) */
-    --background: 220 15% 12%;  /* Soft dark blue/grey */
-    --foreground: 210 10% 90%;  /* Off-white text */
-    --card: 220 15% 15%;        /* Slightly lighter dark for card background */
-    --card-foreground: 210 10% 90%;
-    --popover: 220 15% 15%;
-    --popover-foreground: 210 10% 90%;
-    --primary: 262.1 60% 55%;   /* Slightly brighter primary for dark mode */
-    --primary-foreground: 210 20% 98%;
-    --secondary: 220 10% 25%;   /* Darker secondary grey */
-    --secondary-foreground: 210 10% 70%;
-    --muted: 220 10% 20%;
-    --muted-foreground: 215 10% 60%;
-    --accent: 220 10% 22%;
-    --accent-foreground: 210 10% 90%;
+    /* --- ENHANCED DARK MODE (Muted, Less Saturated) --- */
+    --background: 240 10% 10%;  /* Deep charcoal/navy */
+    --foreground: 210 10% 85%;  /* Soft off-white text */
+    --card: 240 10% 14%;        /* Subtle dark card background */
+    --card-foreground: 210 10% 85%;
+    --popover: 240 10% 14%;
+    --popover-foreground: 210 10% 85%;
+    --primary: 250 60% 55%;     /* Brighter primary for contrast */
+    --primary-foreground: 240 10% 10%;
+    --secondary: 240 10% 20%;   /* Dark secondary grey */
+    --secondary-foreground: 210 10% 65%;
+    --muted: 240 10% 18%;
+    --muted-foreground: 215 10% 55%;
+    --accent: 40 60% 60%;       /* Muted dark ochre accent */
+    --accent-foreground: 240 10% 10%;
     --destructive: 0 62.8% 40%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 220 10% 28%;
-    --input: 220 15% 20%;
-    --ring: 262.1 60% 55%;
+    --destructive-foreground: 210 10% 85%;
+    --border: 240 10% 25%;
+    --input: 240 10% 16%;
+    --ring: 250 60% 55%;
   }
 }
 @layer base {
@@ -56,13 +56,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* --- NEW: Papery Font --- */
-    font-family: 'Merriweather', serif; /* A more traditional, readable serif font */
-    /* Or a softer sans-serif like 'Inter', sans-serif; */
+    font-family: 'Merriweather', serif; 
   }
 }
 
-/* --- NEW: Subtle paper texture background --- */
+/* --- Subtle Paper Texture Background (IMPROVED NOISE COLOR/OPACITY) --- */
 body::before {
   content: '';
   position: fixed;
@@ -70,14 +68,20 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  /* Using a subtle, light noise pattern. Adjust opacity as needed. */
+  /* Using a slightly brownish/sepia tone for noise (9C92AC is a good dusty purple) */
   background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 0h3v3H0V0zm3 3h3v3H3V3z'/%3E%3C/g%3E%3C/svg%3E");
-  opacity: 0.1; /* Very subtle */
-  pointer-events: none; /* Allows clicks to pass through */
-  z-index: -1; /* Ensures it's always in the background */
+  opacity: 0.15; /* Slightly increased visibility */
+  pointer-events: none; 
+  z-index: -1; 
+}
+/* Ensure the noise is visible in dark mode too (using a dark noise color) */
+.dark body::before {
+    background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2344475A' fill-opacity='0.15' fill-rule='evenodd'%3E%3Cpath d='M0 0h3v3H0V0zm3 3h3v3H3V3z'/%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.2; /* Slightly higher opacity in dark mode */
 }
 
-/* --- NEW: More natural box shadows for paper depth --- */
+
+/* --- Papery Shadow Utilities (Keep the existing definitions) --- */
 .shadow-papery-light {
   box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04);
 }
@@ -88,23 +92,27 @@ body::before {
   box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.15), 0px 4px 6px rgba(0, 0, 0, 0.07);
 }
 
+/* --- Ink Effect (optional, for links/primary text) --- */
+.text-primary, .text-card-foreground {
+    /* Subtle color variation to mimic natural ink */
+    /* text-shadow: 0 0 1px rgba(var(--foreground), 0.05); */
+}
 
+
+/* --- Remaining Scrollbar/Video Styles (Unchanged) --- */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: var(--muted);
 }
-
 ::-webkit-scrollbar-thumb {
   background: var(--primary);
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: hsl(var(--primary) / 0.8);
 }
 
 /* Video player styles */

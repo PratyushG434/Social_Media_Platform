@@ -1,4 +1,5 @@
 const db = require("../db/db");
+const notificationService = require("./notificationService");
 
 const userExists = async (userId) => {
   const result = await db.query("SELECT 1 FROM users WHERE user_id = $1;", [

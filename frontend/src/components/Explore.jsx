@@ -1,15 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuthStore } from "../store/useAuthStore"
 import { useNavigate } from "react-router-dom";
 import API from "../service/api";
 import Avatar from "./Avatar";
+import PostCard from "./PostCard"; // CRITICAL: Import PostCard
+import { useNotifications } from "./Notification-system"; // CRITICAL: For error handling
 
 export default function Explore() {
   const [activeTab, setActiveTab] = useState("trending")
   const [searchQuery, setSearchQuery] = useState("")
   const { authUser } = useAuthStore();
+  const { addNotification } = useNotifications();
   const navigate = useNavigate();
 
   const [discoveryPosts, setDiscoveryPosts] = useState([]);
@@ -19,25 +22,52 @@ export default function Explore() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false); 
 
+  // --- Handler for PostCard (to update local state when a user likes/unlikes) ---
+  const handleLikeToggleInExplore = (postId, currentlyLiked) => {
+    // Optimistically update the explore posts list
+    setDiscoveryPosts(prevPosts => prevPosts.map(p => {
+        if (p.post_id === postId) {
+            return {
+                ...p,
+                user_has_liked: !p.user_has_liked,
+                likes_count: p.user_has_liked ? p.likes_count - 1 : p.likes_count + 1,
+            };
+        }
+        return p;
+    }));
+
+    // Send API request
+    API.toggleLike(postId).catch(err => {
+        console.error("Failed to sync like with server:", err);
+        addNotification({ type: 'error', title: 'Like Failed', message: 'Could not update like status on server.' });
+    });
+  };
+
   // --- Effect 1: Fetch Discovery Feed when "Trending" tab is active ---
-  useEffect(() => {
+  const fetchDiscovery = useCallback(async () => {
     if (activeTab !== 'trending') return;
 
-    const fetchDiscovery = async () => {
-      setLoadingDiscovery(true);
-      try {
-        const response = await API.getDiscoveryFeed(); 
-        if (response.isSuccess) {
-          setDiscoveryPosts(response.data.posts || []);
-        }
-      } catch (error) {
-        console.error("Discovery feed fetch error:", error);
-      } finally {
-        setLoadingDiscovery(false);
+    setLoadingDiscovery(true);
+    try {
+      const response = await API.getDiscoveryFeed(); 
+      if (response.isSuccess) {
+        // Ensure posts have a default user_has_liked property for PostCard compatibility
+        const postsWithLikeStatus = (response.data.posts || []).map(p => ({
+            ...p,
+            user_has_liked: p.user_has_liked || false 
+        }));
+        setDiscoveryPosts(postsWithLikeStatus);
       }
-    };
-    fetchDiscovery();
+    } catch (error) {
+      console.error("Discovery feed fetch error:", error);
+    } finally {
+      setLoadingDiscovery(false);
+    }
   }, [activeTab]);
+
+  useEffect(() => {
+    fetchDiscovery();
+  }, [fetchDiscovery]);
 
 
   // --- Effect 2: Debouncing Search (People Tab) ---
@@ -116,68 +146,21 @@ export default function Explore() {
 
       {/* Content */}
       {activeTab === "trending" && (
-        <>
-          {loadingDiscovery && <p className="text-center p-8 text-muted-foreground col-span-full">Loading trending posts...</p>}
-          {!loadingDiscovery && discoveryPosts.length === 0 && <p className="text-center p-8 text-muted-foreground col-span-full">No discovery posts available.</p>}
+        <div className="max-w-2xl mx-auto"> 
+          {loadingDiscovery && <p className="text-center p-8 text-muted-foreground">Loading trending posts...</p>}
+          {!loadingDiscovery && discoveryPosts.length === 0 && <p className="text-center p-8 text-muted-foreground">No discovery posts available.</p>}
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {/* List Style using PostCard */}
+          <div className="space-y-6">
             {discoveryPosts.map((post) => (
-              <div
+              <PostCard
                 key={post.post_id} 
-                className="group relative aspect-square bg-card rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200"
-                onClick={() => navigate(`/post/${post.post_id}`)} // Redirect to PostDetail
-              >
-                {/* --- VIDEO/IMAGE CHECK --- */}
-                {post.content_type === 'video' ? (
-                    <video 
-                        src={post.media_url} 
-                        muted 
-                        loop 
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <img
-                        src={post.media_url || "/placeholder.svg"} 
-                        alt="Trending post"
-                        className="w-full h-full object-cover"
-                    />
-                )}
-                {/* --- END VIDEO/IMAGE CHECK --- */}
-
-
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <div className="flex items-center space-x-4 text-white">
-                    <div className="flex items-center space-x-1">
-                      <span>❤️</span>
-                      <span className="font-medium">{post.likes_count}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span>💬</span>
-                      <span className="font-medium">{post.comments_count}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* User info */}
-                <div 
-                    className="absolute bottom-3 left-3 flex items-center space-x-2 cursor-pointer"
-                    onClick={(e) => {
-                        e.stopPropagation(); // Prevent navigating to post detail when clicking profile link
-                        navigate(`/profile/${post.user_id}`);
-                    }}
-                >
-                  <Avatar
-                    src={post.profile_pic_url}
-                    name={post.display_name || post.username}
-                    className="w-6 h-6 border-2 border-white"
-                  />
-                  <span className="text-white text-sm font-medium">@{post.username}</span>
-                </div>
-              </div>
+                post={post} 
+                onLikeToggle={handleLikeToggleInExplore}
+              />
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {activeTab === "people" && (

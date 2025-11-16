@@ -214,7 +214,6 @@ const FeedContent = () => {
       <div className="bg-white m-4 rounded-2xl p-5 border border-primary/10 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-800 flex items-center gap-2"><span className="text-xl">✨</span> Suggested for you</h3>
-          <button className="text-sm text-primary hover:text-primary/80 font-medium">See All</button>
         </div>
 
         <div className="space-y-3">
