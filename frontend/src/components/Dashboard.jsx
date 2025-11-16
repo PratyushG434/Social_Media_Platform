@@ -14,6 +14,7 @@ import Videos from "./Videos"
 // import Shorts from "./Shorts"
 import Explore from "./Explore"
 import ChatPage from "./Chat"
+import PostDetail from "./postDetail"
 export default function Dashboard() {
   const navigate = useNavigate()
 
@@ -38,6 +39,7 @@ export default function Dashboard() {
 
           {/* Viewer Pages (if StoryViewer needs to be here) */}
           <Route path="story-viewer" element={<StoryViewer />} /> 
+          <Route path="post/:postId" element={<PostDetail />} />
         </Routes>
       </main>
 

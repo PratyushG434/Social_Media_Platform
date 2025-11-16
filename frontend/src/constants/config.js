@@ -106,6 +106,17 @@ export const SERVICE_URLS = {
     method: "POST",
     data: { reaction },
   }),
+  
+  getStoryLikes:({ storyId }) => ({
+    url: `stories/${storyId}/getLikes`,
+    method: "GET",
+    
+  }),
+  getStoryReactions:({ storyId }) => ({
+    url: `stories/${storyId}/reactions`,
+    method: "GET",
+    
+  }),
 
   // CHAT/MESSAGES
 

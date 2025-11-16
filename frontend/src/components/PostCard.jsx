@@ -39,7 +39,7 @@ export default function PostCard({ post, onLikeToggle }) {
   const handlePostContentClick = () => {
     // Only navigate to detail if we are NOT already on the detail page
     if (!isDetailPage) {
-        navigate(`/post/${post.post_id}`);
+        navigate(`/dashboard/post/${post.post_id}`);
     }
   };
 
