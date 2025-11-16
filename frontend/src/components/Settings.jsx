@@ -5,6 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import API from "../service/api";
 import { NotificationProvider, useNotifications } from "./Notification-system";
+import bellIcon from "../assets/icons/bell.png";
+import userIcon from "../assets/icons/user.png";
+import settingsIcon from "../assets/icons/setting.png"
+import bellIcon1 from "../assets/icons/bell1.png";
+import userIcon1 from "../assets/icons/user1.png";
+import settingsIcon1 from "../assets/icons/setting1.png"
 
 // 🔹 Helper functions for DOB format
 function formatDateForInput(isoDate) {
@@ -117,48 +123,48 @@ const SettingsContent = () => {
   };
 
   // 🟢 Handle Save Profile (with image upload inside)
-const handleProfileSubmit = async () => {
-  try {
-    setUploading(true);
+  const handleProfileSubmit = async () => {
+    try {
+      setUploading(true);
 
-    const formData = new FormData();
-    formData.append("display_name", profileData.display_name);
-    formData.append("username", profileData.username);
-    formData.append("bio", profileData.bio || "");
-    formData.append("email", profileData.email);
-    formData.append("dob", profileData.dob ? formatDateToISO(profileData.dob) : "");
-    formData.append("phone", profileData.phone || "");
-    formData.append("website", profileData.website || "");
-    if (selectedFile) formData.append("profile_pic", selectedFile);
+      const formData = new FormData();
+      formData.append("display_name", profileData.display_name);
+      formData.append("username", profileData.username);
+      formData.append("bio", profileData.bio || "");
+      formData.append("email", profileData.email);
+      formData.append("dob", profileData.dob ? formatDateToISO(profileData.dob) : "");
+      formData.append("phone", profileData.phone || "");
+      formData.append("website", profileData.website || "");
+      if (selectedFile) formData.append("profile_pic", selectedFile);
 
-    const userID = profileData.user_id;
-    
-    const res = await API.updateMyProfile({userID, formData});
-    const user = res.user ?? res.data?.user;
-    if (!user) throw new Error("Failed to update");
+      const userID = profileData.user_id;
 
-    setProfileData((prev) => ({
-      ...prev,
-      ...user,
-      dob: formatDateForInput(user.dob),
-    }));
+      const res = await API.updateMyProfile({ userID, formData });
+      const user = res.user ?? res.data?.user;
+      if (!user) throw new Error("Failed to update");
 
-    addNotification({
-      type: "success",
-      title: "Profile Updated",
-      message: "Profile and photo saved successfully!",
-    });
-  } catch (err) {
-    console.error(err);
-    addNotification({
-      type: "error",
-      title: "Update Failed",
-      message: err.message,
-    });
-  } finally {
-    setUploading(false);
-  }
-};
+      setProfileData((prev) => ({
+        ...prev,
+        ...user,
+        dob: formatDateForInput(user.dob),
+      }));
+
+      addNotification({
+        type: "success",
+        title: "Profile Updated",
+        message: "Profile and photo saved successfully!",
+      });
+    } catch (err) {
+      console.error(err);
+      addNotification({
+        type: "error",
+        title: "Update Failed",
+        message: err.message,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleAccountSubmit = async () => {
     try {
@@ -195,9 +201,9 @@ const handleProfileSubmit = async () => {
   };
 
   const sections = [
-    { id: "profile", title: "Edit Profile", icon: "👤" },
-    { id: "account", title: "Account & Privacy", icon: "⚙️" },
-    { id: "notifications", title: "Notifications", icon: "🔔" },
+    { id: "profile", title: "Edit Profile", icon1: userIcon , icon2 : userIcon1},
+    { id: "account", title: "Account & Privacy", icon1: settingsIcon , icon2 : settingsIcon1},
+    { id: "notifications", title: "Notifications", icon1: bellIcon, icon2 : bellIcon1 },
   ];
 
   return (
@@ -224,13 +230,16 @@ const handleProfileSubmit = async () => {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
-                  activeSection === section.id
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${activeSection === section.id
                     ? "bg-primary text-primary-foreground"
                     : "text-card-foreground hover:bg-muted"
-                }`}
+                  }`}
               >
-                <span className="text-lg">{section.icon}</span>
+                <img
+                  src={activeSection === section.id?section.icon2:section.icon1}
+                  alt={section.title}
+                  className="w-5 h-5 object-contain"
+                />
                 <span className="font-medium">{section.title}</span>
               </button>
             ))}
@@ -466,14 +475,12 @@ function ToggleSwitch({ title, desc, value, onToggle }) {
       </div>
       <button
         onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          value ? "bg-primary" : "bg-muted"
-        }`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? "bg-primary" : "bg-muted"
+          }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            value ? "translate-x-6" : "translate-x-1"
-          }`}
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? "translate-x-6" : "translate-x-1"
+            }`}
         />
       </button>
     </div>

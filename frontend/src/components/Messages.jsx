@@ -105,9 +105,9 @@ export default function Messages() {
         <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-border p-6">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-foreground">Messages</h1>
-            <button className="p-3 hover:bg-primary/10 rounded-full transition-colors group">
+            {/* <button className="p-3 hover:bg-primary/10 rounded-full transition-colors group">
               <span className="text-xl group-hover:scale-110 transition-transform">✏️</span>
-            </button>
+            </button> */}
           </div>
           {/* Search/Online Status Bar (Placeholder) */}
         </div>

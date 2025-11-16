@@ -20,26 +20,66 @@ export default function Explore() {
 
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false); 
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+
+  // --- Effect 2: Debouncing Search (People Tab + Dropdown) ---
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    const delay = setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+
+        const response = await API.searchUsers({ searchQuery });
+
+        if (response?.isSuccess) {
+          setSearchResults(response.data || []);
+          setShowSearchResults(true);
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delay);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClick = () => setShowSearchResults(false);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
+
+
 
   // --- Handler for PostCard (to update local state when a user likes/unlikes) ---
   const handleLikeToggleInExplore = (postId, currentlyLiked) => {
     // Optimistically update the explore posts list
     setDiscoveryPosts(prevPosts => prevPosts.map(p => {
-        if (p.post_id === postId) {
-            return {
-                ...p,
-                user_has_liked: !p.user_has_liked,
-                likes_count: p.user_has_liked ? p.likes_count - 1 : p.likes_count + 1,
-            };
-        }
-        return p;
+      if (p.post_id === postId) {
+        return {
+          ...p,
+          user_has_liked: !p.user_has_liked,
+          likes_count: p.user_has_liked ? p.likes_count - 1 : p.likes_count + 1,
+        };
+      }
+      return p;
     }));
 
     // Send API request
     API.toggleLike(postId).catch(err => {
-        console.error("Failed to sync like with server:", err);
-        addNotification({ type: 'error', title: 'Like Failed', message: 'Could not update like status on server.' });
+      console.error("Failed to sync like with server:", err);
+      addNotification({ type: 'error', title: 'Like Failed', message: 'Could not update like status on server.' });
     });
   };
 
@@ -49,12 +89,12 @@ export default function Explore() {
 
     setLoadingDiscovery(true);
     try {
-      const response = await API.getDiscoveryFeed(); 
+      const response = await API.getDiscoveryFeed();
       if (response.isSuccess) {
         // Ensure posts have a default user_has_liked property for PostCard compatibility
         const postsWithLikeStatus = (response.data.posts || []).map(p => ({
-            ...p,
-            user_has_liked: p.user_has_liked || false 
+          ...p,
+          user_has_liked: p.user_has_liked || false
         }));
         setDiscoveryPosts(postsWithLikeStatus);
       }
@@ -122,13 +162,55 @@ export default function Explore() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for posts, people, or hashtags..."
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setShowSearchResults(true)   // 🟢 Show dropdown as soon as user types
+            }}
+            placeholder="Search for people..."
             className="w-full px-6 py-4 bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-lg"
           />
+
           <button className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors">
             <span className="text-xl">🔍</span>
           </button>
+
+          {/* 🔥 SEARCH DROPDOWN (Copied from Feed page) */}
+          {showSearchResults && searchQuery.trim() !== "" && (
+            <div
+              className="absolute top-full left-0 w-full bg-white shadow-lg border border-gray-200 mt-2 rounded-xl z-50 max-h-64 overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {searchLoading && (
+                <p className="p-3 text-sm text-gray-500">Searching...</p>
+              )}
+
+              {!searchLoading && searchResults.length === 0 && (
+                <p className="p-3 text-sm text-gray-500">No users found.</p>
+              )}
+
+              {!searchLoading &&
+                searchResults.map((user) => (
+                  <div
+                    key={user.user_id}
+                    onClick={() => {
+                      navigate(`/profile/${user.user_id}`);
+                      setShowSearchResults(false);
+                    }}
+                    className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer transition"
+                  >
+                    <img
+                      src={user.profile_pic_url || "/placeholder.svg"}
+                      alt="avatar"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-800">{user.display_name}</p>
+                      <p className="text-xs text-gray-500">@{user.username}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
         <div className="flex space-x-1 bg-muted p-1 rounded-xl">
           {tabs.map((tab) => (
@@ -146,16 +228,16 @@ export default function Explore() {
 
       {/* Content */}
       {activeTab === "trending" && (
-        <div className="max-w-2xl mx-auto"> 
+        <div className="max-w-2xl mx-auto">
           {loadingDiscovery && <p className="text-center p-8 text-muted-foreground">Loading trending posts...</p>}
           {!loadingDiscovery && discoveryPosts.length === 0 && <p className="text-center p-8 text-muted-foreground">No discovery posts available.</p>}
-          
+
           {/* List Style using PostCard */}
           <div className="space-y-6">
             {discoveryPosts.map((post) => (
               <PostCard
-                key={post.post_id} 
-                post={post} 
+                key={post.post_id}
+                post={post}
                 onLikeToggle={handleLikeToggleInExplore}
               />
             ))}
