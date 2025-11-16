@@ -6,14 +6,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import API from "../service/api";
 import { useAuthStore } from "../store/useAuthStore";
 import Avatar from "./Avatar";
-import PostCard from "./PostCard.jsx"
-import { useChatStore } from "../store/useChatStore"; // CRITICAL: Import Chat Store
-import { useNotifications } from "./Notification-system"; // CRITICAL: Import Notifications
-
+import PostCard from "./PostCard.jsx";
+import { useChatStore } from "../store/useChatStore";
+import { useNotifications } from "./Notification-system";
 
 export default function Profile() {
   const { userId: paramId } = useParams();
-  const userId = paramId ? parseInt(paramId, 10) : null; 
+  const userId = paramId ? parseInt(paramId, 10) : null;
+
   const [user, setUser] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,17 +21,36 @@ export default function Profile() {
   const [viewMode, setViewMode] = useState("list"); // "list" | "grid"
 
   const { authUser } = useAuthStore();
-  const { setSelectedUser } = useChatStore();
-  const navigate = useNavigate();
-
-  const { setTargetUserForChat } = useChatStore(); 
+  const { setSelectedUser, setTargetUserForChat } = useChatStore();
   const { addNotification } = useNotifications();
-
+  const navigate = useNavigate();
 
   const isOwnProfile = !paramId || (authUser && authUser.user_id === userId);
 
+  // Follow state
   const [isFollowing, setIsFollowing] = useState(false);
   const [followsMe, setFollowsMe] = useState(false);
+
+  // Modals for followers / following
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+
+  // 🔒 Scroll lock when any modal is open
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const originalOverflow = document.body.style.overflow;
+
+    if (showFollowersModal || showFollowingModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = originalOverflow || "";
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow || "";
+    };
+  }, [showFollowersModal, showFollowingModal]);
 
   // --- Fetch User Profile Data ---
   const fetchUserProfile = useCallback(async () => {
@@ -75,15 +94,16 @@ export default function Profile() {
       }));
       setUserPosts(postsWithLikeStatus);
 
-      if (!isOwnProfile && authUser && userData) {
+      // Set follow states based on fresh data
+      if (authUser && !isOwnProfile) {
         const currentAuthUserId = authUser.user_id;
 
         const isAuthUserFollowing =
-          userFollowers?.some((f) => f.user_id === currentAuthUserId) || false;
+          userFollowers.some((f) => f.user_id === currentAuthUserId) || false;
         setIsFollowing(isAuthUserFollowing);
 
         const doesTargetFollowMe =
-          userFollowing?.some((f) => f.user_id === currentAuthUserId) || false;
+          userFollowing.some((f) => f.user_id === currentAuthUserId) || false;
         setFollowsMe(doesTargetFollowMe);
       } else {
         setIsFollowing(false);
@@ -97,9 +117,8 @@ export default function Profile() {
     }
   }, [userId, isOwnProfile, authUser, navigate, paramId]);
 
-  // 🔁 IMPORTANT: This runs again whenever URL param changes
+  // 🔁 Load whenever URL / auth changes
   useEffect(() => {
-    // if no param and user not logged in -> go login
     if (!authUser && !paramId) {
       setLoading(false);
       setUser(null);
@@ -107,9 +126,6 @@ export default function Profile() {
       return;
     }
 
-    // Load profile when:
-    // - own profile & logged in OR
-    // - someone else's profile & have userId
     if ((isOwnProfile && authUser?.user_id) || (!isOwnProfile && userId)) {
       fetchUserProfile();
     } else {
@@ -118,38 +134,92 @@ export default function Profile() {
     }
   }, [paramId, userId, authUser, isOwnProfile, fetchUserProfile, navigate]);
 
-  // --- Follow / Unfollow ---
+  // --- Follow / Unfollow (uses state isFollowing, avoids double-click) ---
   const handleFollowToggle = useCallback(async () => {
     if (!user || !authUser) return;
 
     const targetUserId = user.user_id;
+    const wasFollowing = isFollowing; // old value
 
-    // Optimistic UI update
-    setIsFollowing((prev) => !prev);
+    // 1️⃣ Optimistic UI: update local state + followers list
+    setIsFollowing(!wasFollowing);
 
     setUser((prevUser) => {
-      if (!prevUser) return null;
+      if (!prevUser) return prevUser;
 
       const currentFollowers = prevUser.followers || [];
-      const newFollowers = isFollowing
-        ? currentFollowers.filter((f) => f.user_id !== authUser.user_id)
-        : [
+      let newFollowers;
+
+      if (!wasFollowing) {
+        // pehle follow nahi kar rahe the -> ab follow
+        if (currentFollowers.some((f) => f.user_id === authUser.user_id)) {
+          newFollowers = currentFollowers;
+        } else {
+          newFollowers = [
             ...currentFollowers,
-            { user_id: authUser.user_id, username: authUser.username },
+            {
+              user_id: authUser.user_id,
+              username: authUser.username,
+              display_name: authUser.display_name || authUser.username,
+              profile_pic_url: authUser.profile_pic_url || null,
+            },
           ];
+        }
+      } else {
+        // pehle follow kar rahe the -> ab unfollow
+        newFollowers = currentFollowers.filter(
+          (f) => f.user_id !== authUser.user_id
+        );
+      }
+
       return { ...prevUser, followers: newFollowers };
     });
 
+    // 2️⃣ API call
     try {
       const response = await API.toggleFollow({ userId: targetUserId });
       if (!response?.isSuccess) throw new Error("Failed to toggle follow status");
 
-      const { following } = response.data;
-      setIsFollowing(following);
+      // optional: server ka following flag mila to override
+      if (response.data && typeof response.data.following === "boolean") {
+        setIsFollowing(response.data.following);
+      }
     } catch (err) {
       console.error("Follow toggle error:", err);
-      // Revert on error
-      setIsFollowing((prev) => !prev);
+
+      // 3️⃣ Error pe FULL revert
+      setIsFollowing(wasFollowing);
+
+      setUser((prevUser) => {
+        if (!prevUser) return prevUser;
+
+        const currentFollowers = prevUser.followers || [];
+        let revertedFollowers;
+
+        if (!wasFollowing) {
+          // originally follow nahi kar rahe the -> revert: ensure removed
+          revertedFollowers = currentFollowers.filter(
+            (f) => f.user_id !== authUser.user_id
+          );
+        } else {
+          // originally follow kar rahe the -> revert: ensure present
+          if (currentFollowers.some((f) => f.user_id === authUser.user_id)) {
+            revertedFollowers = currentFollowers;
+          } else {
+            revertedFollowers = [
+              ...currentFollowers,
+              {
+                user_id: authUser.user_id,
+                username: authUser.username,
+                display_name: authUser.display_name || authUser.username,
+                profile_pic_url: authUser.profile_pic_url || null,
+              },
+            ];
+          }
+        }
+
+        return { ...prevUser, followers: revertedFollowers };
+      });
     }
   }, [user, authUser, isFollowing]);
 
@@ -177,6 +247,29 @@ export default function Profile() {
     }
   };
 
+  const handleMessageUser = () => {
+    if (!user || !authUser) {
+      addNotification({
+        type: "warning",
+        title: "Login Required",
+        message: "You must be logged in to send messages.",
+      });
+      return;
+    }
+
+    if (user.user_id === authUser.user_id) {
+      addNotification({
+        type: "warning",
+        title: "Self Chat",
+        message: "Cannot message yourself.",
+      });
+      return;
+    }
+
+    setTargetUserForChat(user.user_id);
+    navigate("/dashboard/messages");
+  };
+
   // --- Like Toggle per Post ---
   const handleLikeToggle = (postId) => {
     setUserPosts((prevPosts) =>
@@ -197,27 +290,6 @@ export default function Profile() {
       console.error("Failed to sync like with server:", err);
     });
   };
-
-
-  const handleMessageUser = () => {
-    if (!user || !authUser) {
-      addNotification({ type: 'warning', title: 'Login Required', message: 'You must be logged in to send messages.' });
-      return;
-    }
-    
-    if (user.user_id === authUser.user_id) {
-       addNotification({ type: 'warning', title: 'Self Chat', message: 'Cannot message yourself.' });
-       return;
-    }
-
-    // 1. Set the target user ID in the store
-    setTargetUserForChat(user.user_id);
-    
-    // 2. Navigate to the messages dashboard
-    navigate("/dashboard/messages");
-  };
-
-
 
   if (loading) {
     return (
@@ -245,13 +317,10 @@ export default function Profile() {
     );
   }
 
-  
-
   // --- Helper component for the Grid View (with Video Fix) ---
   const GridView = ({ posts }) => (
     <div className="grid grid-cols-3 gap-1">
-      {posts.filter((p) => p.content_type !== "text" && p.media_url).length >
-      0 ? (
+      {posts.filter((p) => p.content_type !== "text" && p.media_url).length > 0 ? (
         posts
           .filter((p) => p.content_type !== "text" && p.media_url)
           .map((post) => (
@@ -303,20 +372,23 @@ export default function Profile() {
     </div>
   );
 
+  // Follow button style + label
+  const followButtonClass = isFollowing
+    ? "flex-1 bg-destructive text-destructive-foreground py-2 px-4 rounded-lg font-medium hover:bg-destructive/90 transition-colors"
+    : "flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors";
+
+  const followButtonLabel = isFollowing
+    ? "Unfollow"
+    : followsMe
+    ? "Follow Back"
+    : "Follow";
+
   // --- Main JSX ---
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
-
       <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-border p-4 z-10">
         <div className="flex items-center justify-center">
-          {/* <button
-            onClick={() => navigate(-1)}
-            className="text-muted-foreground hover:text-card-foreground transition-colors"
-          >
-            <span className="text-xl">←</span>
-          </button> */}
-
           <h1 className="text-xl font-semibold text-card-foreground">
             @{user.username}
           </h1>
@@ -324,12 +396,12 @@ export default function Profile() {
           {isOwnProfile ? (
             <button
               onClick={() => navigate("/dashboard/settings")}
-              className="text-muted-foreground hover:text-card-foreground transition-colors"
+              className="ml-auto text-muted-foreground hover:text-card-foreground transition-colors"
             >
               <span className="text-xl">⚙️</span>
             </button>
           ) : (
-            <div className="w-6" />
+            <div className="w-6 ml-auto" />
           )}
         </div>
       </div>
@@ -353,6 +425,7 @@ export default function Profile() {
 
             {/* Stats */}
             <div className="flex space-x-6 mb-4">
+              {/* Posts */}
               <div className="text-center">
                 <p className="font-bold text-card-foreground">
                   {userPosts.length}
@@ -360,14 +433,24 @@ export default function Profile() {
                 <p className="text-sm text-muted-foreground">Posts</p>
               </div>
 
-              <button className="text-center">
+              {/* Followers */}
+              <button
+                type="button"
+                onClick={() => setShowFollowersModal(true)}
+                className="text-center hover:text-card-foreground transition-colors"
+              >
                 <p className="font-bold text-card-foreground">
                   {user.followers?.length || 0}
                 </p>
                 <p className="text-sm text-muted-foreground">Followers</p>
               </button>
 
-              <button className="text-center">
+              {/* Following */}
+              <button
+                type="button"
+                onClick={() => setShowFollowingModal(true)}
+                className="text-center hover:text-card-foreground transition-colors"
+              >
                 <p className="font-bold text-card-foreground">
                   {user.following?.length || 0}
                 </p>
@@ -393,17 +476,13 @@ export default function Profile() {
                 <>
                   <button
                     onClick={handleFollowToggle}
-                    className="flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                    className={followButtonClass}
                   >
-                    {isFollowing
-                      ? "Unfollow"
-                      : followsMe
-                      ? "Follow Back"
-                      : "Follow"}
+                    {followButtonLabel}
                   </button>
 
-                  <button 
-                    onClick={handleMessageUser} // CRITICAL: Binding the handler here
+                  <button
+                    onClick={handleMessageUser}
                     className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
                   >
                     Message
@@ -498,6 +577,120 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* Followers Modal */}
+      {showFollowersModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowFollowersModal(false);
+          }}
+        >
+          <div className="bg-card border border-border w-[90%] max-w-sm sm:max-w-md md:max-w-lg rounded-2xl shadow-xl max-h-[75vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h2 className="text-base font-semibold">Followers</h2>
+              <button
+                onClick={() => setShowFollowersModal(false)}
+                className="text-muted-foreground hover:text-card-foreground"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto px-2 py-2">
+              {user.followers && user.followers.length > 0 ? (
+                user.followers.map((follower) => (
+                  <button
+                    key={follower.user_id}
+                    type="button"
+                    onClick={() => {
+                      setShowFollowersModal(false);
+                      navigate(`/dashboard/profile/${follower.user_id}`);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted text-left"
+                  >
+                    <Avatar
+                      src={follower.profile_pic_url}
+                      name={follower.display_name || follower.username}
+                      className="w-8 h-8"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        @{follower.username}
+                      </span>
+                      {follower.display_name && (
+                        <span className="text-xs text-muted-foreground">
+                          {follower.display_name}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <p className="px-4 py-6 text-sm text-muted-foreground text-center">
+                  No followers yet.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Following Modal */}
+      {showFollowingModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowFollowingModal(false);
+          }}
+        >
+          <div className="bg-card border border-border w-[90%] max-w-sm sm:max-w-md md:max-w-lg rounded-2xl shadow-xl max-h-[75vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h2 className="text-base font-semibold">Following</h2>
+              <button
+                onClick={() => setShowFollowingModal(false)}
+                className="text-muted-foreground hover:text-card-foreground"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto px-2 py-2">
+              {user.following && user.following.length > 0 ? (
+                user.following.map((u) => (
+                  <button
+                    key={u.user_id}
+                    type="button"
+                    onClick={() => {
+                      setShowFollowingModal(false);
+                      navigate(`/dashboard/profile/${u.user_id}`);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted text-left"
+                  >
+                    <Avatar
+                      src={u.profile_pic_url}
+                      name={u.display_name || u.username}
+                      className="w-8 h-8"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">@{u.username}</span>
+                      {u.display_name && (
+                        <span className="text-xs text-muted-foreground">
+                          {u.display_name}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <p className="px-4 py-6 text-sm text-muted-foreground text-center">
+                  Not following anyone yet.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
