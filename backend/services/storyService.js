@@ -160,7 +160,7 @@ exports.getStoryLikes = async (storyId) => { // <-- NEW FUNCTION
             sl.user_id,
             u.username,
             u.display_name,
-            u.profile_pic_url,
+            u.profile_pic_url
          FROM story_likes sl
          JOIN users u ON sl.user_id = u.user_id 
          WHERE sl.story_id = $1
