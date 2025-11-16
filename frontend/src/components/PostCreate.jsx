@@ -1,68 +1,97 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useNotifications } from "./Notification-system"
-import API from "../service/api"
-import { useAuthStore } from "../store/useAuthStore"
-import Avatar from "./Avatar"
-
-import mapIcon from "../assets/icons/maps-and-flags.png"
-import cameraIcon from "../assets/icons/image.png"
-import timerIcon from "../assets/icons/sand-clock.png"
+import { useState, useEffect } from "react";
+import API from "../service/api";
+import { useNotifications } from "./Notification-system";
+import { useAuthStore } from "../store/useAuthStore";
+import Avatar from "./Avatar";
+import mapIcon from "../assets/icons/maps-and-flags.png";
+import cameraIcon from "../assets/icons/image.png";
+import timerIcon from "../assets/icons/sand-clock.png";
 
 export default function PostCreate() {
-  const [content, setContent] = useState("")
-  const [mediaFile, setMediaFile] = useState(null)
-  const [mediaPreview, setMediaPreview] = useState(null)
-  const [mediaType, setMediaType] = useState(null) // "image" | "video" | null
-  const [isPosting, setIsPosting] = useState(false)
+  const [content, setContent] = useState("");
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [mediaType, setMediaType] = useState(null); // "image" | "video" | null
+  const [isPosting, setIsPosting] = useState(false);
 
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [isGettingLocation, setIsGettingLocation] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
-  const { addNotification } = useNotifications()
-  const { authUser } = useAuthStore()
+  const { addNotification } = useNotifications();
+  const { authUser } = useAuthStore();
+
+  const [taggedUsers, setTaggedUsers] = useState([]); // Array of user objects
+  const [tagQuery, setTagQuery] = useState("");
+  const [tagSearchResults, setTagSearchResults] = useState([]);
+  const [showTagSearch, setShowTagSearch] = useState(false);
+  // Search users for tagging
+  useEffect(() => {
+    if (!tagQuery.trim()) {
+      setTagSearchResults([]);
+      setShowTagSearch(false);
+      return;
+    }
+    const delay = setTimeout(async () => {
+      try {
+        const response = await API.searchUsers({ searchQuery: tagQuery });
+        if (response?.isSuccess) {
+          // Exclude already tagged users
+          setTagSearchResults(
+            response.data.filter(
+              (u) => !taggedUsers.some((tu) => tu.user_id === u.user_id)
+            )
+          );
+          setShowTagSearch(true);
+        }
+      } catch {
+        setTagSearchResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(delay);
+  }, [tagQuery, taggedUsers]);
 
   const handleMediaChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (file) {
-      setMediaFile(file)
+      setMediaFile(file);
 
       if (file.type.startsWith("video")) {
-        setMediaType("video")
+        setMediaType("video");
       } else {
-        setMediaType("image")
+        setMediaType("image");
       }
 
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (e) => {
-        setMediaPreview(e.target.result)
-      }
-      reader.readAsDataURL(file)
+        setMediaPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleAddEmoji = (emoji) => {
-    setContent((prev) => prev + emoji)
-    setShowEmojiPicker(false)
-  }
+    setContent((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+  };
 
   const reverseGeocode = async (lat, lng) => {
     try {
       const res = await fetch(
         `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=e9ff163643b44c78932108699598026b`
-      )
+      );
 
-      const data = await res.json()
+      const data = await res.json();
       if (data?.results?.length > 0) {
-        return data.results[0].formatted // readable location name
+        return data.results[0].formatted; // readable location name
       } else {
-        return null
+        return null;
       }
     } catch {
-      return null
+      return null;
     }
-  }
+  };
 
   const handleAddLocation = () => {
     if (!navigator.geolocation) {
@@ -70,93 +99,99 @@ export default function PostCreate() {
         type: "error",
         title: "Location Error",
         message: "Geolocation is not supported by your browser.",
-      })
-      return
+      });
+      return;
     }
 
-    setIsGettingLocation(true)
+    setIsGettingLocation(true);
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const { latitude, longitude } = position.coords
+        const { latitude, longitude } = position.coords;
 
-        const placeName = await reverseGeocode(latitude, longitude)
+        const placeName = await reverseGeocode(latitude, longitude);
 
         if (placeName) {
-          const locationText = `📍 ${placeName}`
-          setContent((prev) => (prev ? prev + "\n" + locationText : locationText))
+          const locationText = `📍 ${placeName}`;
+          setContent((prev) =>
+            prev ? prev + "\n" + locationText : locationText
+          );
         } else {
-          const locationText = `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-          setContent((prev) => (prev ? prev + "\n" + locationText : locationText))
+          const locationText = `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(
+            4
+          )}`;
+          setContent((prev) =>
+            prev ? prev + "\n" + locationText : locationText
+          );
         }
 
-        setIsGettingLocation(false)
+        setIsGettingLocation(false);
       },
       (error) => {
         addNotification?.({
           type: "error",
           title: "Location Error",
           message: error?.message || "Unable to fetch your location.",
-        })
-        setIsGettingLocation(false)
+        });
+        setIsGettingLocation(false);
       }
-    )
-  }
+    );
+  };
 
   const handlePost = async (e) => {
-    e.preventDefault()
-    if (!content.trim() && !mediaFile) return
+    e.preventDefault();
+    if (!content.trim() && !mediaFile) return;
 
     try {
-      setIsPosting(true)
-
-      const formData = new FormData()
-
+      setIsPosting(true);
+      const formData = new FormData();
       // File
       if (mediaFile) {
-        formData.append("content", mediaFile)
+        formData.append("content", mediaFile);
       }
-
       // Text
-      formData.append("content", content.trim())
-
+      formData.append("content", content.trim());
       // Determine content type
-      let contentType = "text"
+      let contentType = "text";
       if (mediaFile) {
-        contentType = mediaFile.type.startsWith("video") ? "video" : "image"
+        contentType = mediaFile.type.startsWith("video") ? "video" : "image";
       }
-      formData.append("content_type", contentType)
-
-      const response = await API.createPost(formData)
-
-      if (!response?.isSuccess) throw new Error("Failed to create post")
-
+      formData.append("content_type", contentType);
+      // Add tags (array of user IDs)
+      if (taggedUsers.length > 0) {
+        taggedUsers.forEach((u, idx) => {
+          formData.append(`tags[${idx}]`, u.user_id);
+        });
+      }
+      const response = await API.createPost(formData);
+      if (!response?.isSuccess) throw new Error("Failed to create post");
       addNotification?.({
         type: "success",
         title: "Post Created",
         message: "Your post was successfully uploaded!",
-      })
-
-      setContent("")
-      setMediaFile(null)
-      setMediaPreview(null)
-      setMediaType(null)
+      });
+      setContent("");
+      setMediaFile(null);
+      setMediaPreview(null);
+      setMediaType(null);
+      setTaggedUsers([]);
+      setTagQuery("");
     } catch (err) {
       addNotification?.({
         type: "error",
         title: "Post Failed",
         message: err?.message || "Something went wrong",
-      })
+      });
     } finally {
-      setIsPosting(false)
+      setIsPosting(false);
     }
-  }
+  };
 
   const removeMedia = () => {
-    setMediaFile(null)
-    setMediaPreview(null)
-    setMediaType(null)
-  }
+    setMediaFile(null);
+    setMediaPreview(null);
+    setMediaType(null);
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -169,7 +204,9 @@ export default function PostCreate() {
           >
             <span className="text-xl">←</span>
           </button>
-          <h1 className="text-xl font-semibold text-card-foreground">Create Post</h1>
+          <h1 className="text-xl font-semibold text-card-foreground">
+            Create Post
+          </h1>
           <button
             onClick={handlePost}
             disabled={(!content.trim() && !mediaFile) || isPosting}
@@ -194,7 +231,9 @@ export default function PostCreate() {
               <p className="font-semibold text-card-foreground">
                 {authUser?.display_name || authUser?.username}
               </p>
-              <p className="text-sm text-muted-foreground">@{authUser?.username}</p>
+              <p className="text-sm text-muted-foreground">
+                @{authUser?.username}
+              </p>
             </div>
           </div>
 
@@ -207,6 +246,77 @@ export default function PostCreate() {
               className="w-full bg-transparent border-none resize-none text-card-foreground placeholder-muted-foreground focus:outline-none text-lg min-h-32"
               rows={4}
             />
+
+            {/* Tag Users */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-1">
+                Tag users:
+              </label>
+              <input
+                type="text"
+                value={tagQuery}
+                onChange={(e) => setTagQuery(e.target.value)}
+                placeholder="Search users to tag..."
+                className="w-full px-2 py-1 border rounded mb-2"
+                onFocus={() => setShowTagSearch(true)}
+              />
+              {showTagSearch && tagSearchResults.length > 0 && (
+                <div className="border rounded bg-background shadow p-2 max-h-40 overflow-y-auto z-20 absolute">
+                  {tagSearchResults.map((user) => (
+                    <div
+                      key={user.user_id}
+                      className="flex items-center gap-2 py-1 cursor-pointer hover:bg-primary/10 px-2 rounded"
+                      onClick={() => {
+                        setTaggedUsers([...taggedUsers, user]);
+                        setTagQuery("");
+                        setShowTagSearch(false);
+                      }}
+                    >
+                      <Avatar
+                        src={user.profile_pic_url}
+                        name={user.display_name || user.username}
+                        className="w-6 h-6"
+                      />
+                      <span>{user.display_name || user.username}</span>
+                      <span className="text-xs text-muted-foreground">
+                        @{user.username}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Show tagged users */}
+              {taggedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {taggedUsers.map((user) => (
+                    <span
+                      key={user.user_id}
+                      className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded text-sm"
+                    >
+                      <Avatar
+                        src={user.profile_pic_url}
+                        name={user.display_name || user.username}
+                        className="w-5 h-5"
+                      />
+                      {user.display_name || user.username}
+                      <button
+                        type="button"
+                        className="ml-1 text-xs text-red-500 hover:text-red-700"
+                        onClick={() =>
+                          setTaggedUsers(
+                            taggedUsers.filter(
+                              (u) => u.user_id !== user.user_id
+                            )
+                          )
+                        }
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Media Preview */}
             {mediaPreview && (
@@ -285,23 +395,34 @@ export default function PostCreate() {
             {/* Emoji Picker */}
             {showEmojiPicker && (
               <div className="mt-2 p-2 border border-border rounded-lg bg-background flex flex-wrap gap-2">
-                {["😀", "😅", "😂", "😍", "😎", "🤔", "😭", "🙏", "🔥", "🎉", "❤️", "👍"].map(
-                  (emo) => (
-                    <button
-                      key={emo}
-                      type="button"
-                      className="text-2xl hover:scale-110 transition-transform"
-                      onClick={() => handleAddEmoji(emo)}
-                    >
-                      {emo}
-                    </button>
-                  )
-                )}
+                {[
+                  "😀",
+                  "😅",
+                  "😂",
+                  "😍",
+                  "😎",
+                  "🤔",
+                  "😭",
+                  "🙏",
+                  "🔥",
+                  "🎉",
+                  "❤️",
+                  "👍",
+                ].map((emo) => (
+                  <button
+                    key={emo}
+                    type="button"
+                    className="text-2xl hover:scale-110 transition-transform"
+                    onClick={() => handleAddEmoji(emo)}
+                  >
+                    {emo}
+                  </button>
+                ))}
               </div>
             )}
           </form>
         </div>
       </div>
     </div>
-  )
+  );
 }
