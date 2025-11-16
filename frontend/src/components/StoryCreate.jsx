@@ -4,31 +4,40 @@ import { useState } from "react"
 import { useNotifications } from "./Notification-system"
 import { useNavigate } from "react-router-dom"
 import API from "../service/api"
-import { useAuthStore } from "../store/useAuthStore" // Import AuthStore
-import Avatar from "./Avatar" // Import Avatar
+import { useAuthStore } from "../store/useAuthStore"
+import Avatar from "./Avatar"
 
 export default function StoryCreate() {
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
+  const [mediaType, setMediaType] = useState(null) // "image" | "video" | null
+
   const [storyText, setStoryText] = useState("")
   const [textColor, setTextColor] = useState("#ffffff")
   const [backgroundColor, setBackgroundColor] = useState("#000000")
   const [isPosting, setIsPosting] = useState(false)
-  
+
   const { addNotification } = useNotifications()
   const navigate = useNavigate()
-  const { authUser } = useAuthStore() // Get authUser details
+  const { authUser } = useAuthStore()
 
   const handleMediaChange = (e) => {
     const file = e.target.files[0]
-    if (file) {
-      setMediaFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setMediaPreview(e.target.result)
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+
+    setMediaFile(file)
+
+    if (file.type.startsWith("video")) {
+      setMediaType("video")
+    } else {
+      setMediaType("image")
     }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setMediaPreview(ev.target.result)
+    }
+    reader.readAsDataURL(file)
   }
 
   const handlePost = async (e) => {
@@ -37,21 +46,23 @@ export default function StoryCreate() {
 
     try {
       setIsPosting(true)
+      console.log("➡️ Story upload started")
 
       const formData = new FormData()
 
-      // Determine content type
-      let contentType = 'text';
+      let contentType = "text"
       if (mediaFile) {
-        contentType = mediaFile.type.startsWith('video') ? 'video' : 'image';
-        formData.append("content", mediaFile) // File uses 'content' key
+        contentType = mediaFile.type.startsWith("video") ? "video" : "image"
+        formData.append("content", mediaFile)
       } else {
-        formData.append("content", storyText.trim()) // Text uses 'content' key
+        formData.append("content", storyText.trim())
       }
 
       formData.append("content_type", contentType)
 
+      // IMPORTANT: make sure API.createStory *returns* the axios promise
       const response = await API.createStory(formData)
+      console.log("✅ Story upload response:", response)
 
       if (!response?.isSuccess) {
         throw new Error("Failed to create story")
@@ -60,24 +71,23 @@ export default function StoryCreate() {
       addNotification?.({
         type: "success",
         title: "Story Created",
-        message: "Your story was successfully uploaded!"
+        message: "Your story was successfully uploaded!",
       })
 
-      // Reset UI
+      // reset
       setStoryText("")
       setMediaFile(null)
       setMediaPreview(null)
+      setMediaType(null)
 
-      // Navigate back to dashboard after posting
       navigate("/dashboard")
     } catch (err) {
-      console.error("Story upload failed:", err)
+      console.error("❌ Story upload failed (front-end):", err)
       addNotification?.({
         type: "error",
         title: "Story Failed",
-        message: err?.message || "Something went wrong"
+        message: err?.message || "Something went wrong",
       })
-
     } finally {
       setIsPosting(false)
     }
@@ -96,13 +106,16 @@ export default function StoryCreate() {
     "#8844ff",
   ]
 
-  const userDisplayName = authUser?.display_name || authUser?.username;
+  const userDisplayName = authUser?.display_name || authUser?.username
 
   return (
     <div className="fixed inset-0 bg-black z-50">
       {/* Header */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-        <button onClick={() => navigate("/dashboard")} className="text-white hover:text-white/70 transition-colors">
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="text-white hover:text-white/70 transition-colors"
+        >
           <span className="text-xl">←</span>
         </button>
         <h1 className="text-white font-semibold">Create Story</h1>
@@ -118,16 +131,32 @@ export default function StoryCreate() {
       {/* Story preview */}
       <div className="relative w-full h-full flex items-center justify-center">
         {mediaPreview ? (
-          <img
-            src={mediaPreview || "/placeholder.svg"}
-            alt="Story preview"
-            className="max-w-full max-h-full object-contain"
-          />
+          mediaType === "video" ? (
+            <video
+              src={mediaPreview}
+              controls
+              autoPlay
+              loop
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            <img
+              src={mediaPreview || "/placeholder.svg"}
+              alt="Story preview"
+              className="max-w-full max-h-full object-contain"
+            />
+          )
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor }}>
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ backgroundColor }}
+          >
             {storyText ? (
               <div className="text-center p-8">
-                <p className="text-2xl font-bold break-words" style={{ color: textColor }}>
+                <p
+                  className="text-2xl font-bold break-words"
+                  style={{ color: textColor }}
+                >
                   {storyText}
                 </p>
               </div>
@@ -140,10 +169,13 @@ export default function StoryCreate() {
           </div>
         )}
 
-        {/* Text overlay on image */}
+        {/* Text overlay on media */}
         {mediaPreview && storyText && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-2xl font-bold text-center p-4 bg-black/50 rounded-lg" style={{ color: textColor }}>
+            <p
+              className="text-2xl font-bold text-center p-4 bg-black/50 rounded-lg"
+              style={{ color: textColor }}
+            >
               {storyText}
             </p>
           </div>
@@ -165,13 +197,27 @@ export default function StoryCreate() {
             <div className="flex space-x-2">
               <span className="text-white text-sm">Text:</span>
               {colorOptions.slice(0, 5).map((color) => (
-                <button key={color} onClick={() => setTextColor(color)} className={`w-6 h-6 rounded-full border-2 ${textColor === color ? "border-white" : "border-white/30"}`} style={{ backgroundColor: color }} />
+                <button
+                  key={color}
+                  onClick={() => setTextColor(color)}
+                  className={`w-6 h-6 rounded-full border-2 ${
+                    textColor === color ? "border-white" : "border-white/30"
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
               ))}
             </div>
             <div className="flex space-x-2">
               <span className="text-white text-sm">BG:</span>
               {colorOptions.slice(0, 5).map((color) => (
-                <button key={color} onClick={() => setBackgroundColor(color)} className={`w-6 h-6 rounded-full border-2 ${backgroundColor === color ? "border-white" : "border-white/30"}`} style={{ backgroundColor: color }} />
+                <button
+                  key={color}
+                  onClick={() => setBackgroundColor(color)}
+                  className={`w-6 h-6 rounded-full border-2 ${
+                    backgroundColor === color ? "border-white" : "border-white/30"
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
               ))}
             </div>
           </div>
@@ -181,10 +227,14 @@ export default function StoryCreate() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <label className="cursor-pointer text-white hover:text-white/70 transition-colors">
-              <input type="file" accept="image/*,video/*" onChange={handleMediaChange} className="hidden" />
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={handleMediaChange}
+                className="hidden"
+              />
               <span className="text-2xl">📷</span>
             </label>
-            {/* Other tools omitted for brevity */}
           </div>
 
           {mediaFile && (
@@ -192,6 +242,7 @@ export default function StoryCreate() {
               onClick={() => {
                 setMediaFile(null)
                 setMediaPreview(null)
+                setMediaType(null)
               }}
               className="text-white hover:text-white/70 transition-colors"
             >
@@ -200,16 +251,18 @@ export default function StoryCreate() {
           )}
         </div>
 
-        {/* User info (with Avatar) */}
+        {/* User info */}
         <div className="flex items-center space-x-3">
-          <Avatar 
-            src={authUser?.profile_pic_url} 
+          <Avatar
+            src={authUser?.profile_pic_url}
             name={userDisplayName}
-            className="w-8 h-8" 
+            className="w-8 h-8"
           />
           <div>
             <p className="text-white font-semibold text-sm">{userDisplayName}</p>
-            <p className="text-white/70 text-xs">Your story will be visible for 24 hours</p>
+            <p className="text-white/70 text-xs">
+              Your story will be visible for 24 hours
+            </p>
           </div>
         </div>
       </div>

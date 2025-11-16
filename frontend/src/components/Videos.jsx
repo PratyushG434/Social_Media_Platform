@@ -106,7 +106,7 @@ export default function Videos({ currentUser, onNavigate }) {
             className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
             onMouseEnter={handleMouseOver}
             onMouseLeave={handleMouseOut}
-            onClick={() => navigate(`/post/${video.post_id}`)} // Assumes onNavigate takes the post ID
+            onClick={() => navigate(`/dashboard/post/${video.post_id}`)} // Assumes onNavigate takes the post ID
           >
             <div className="relative">
               {/* Replaced <img> with <video> for hover-play */}
