@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import API from "../service/api" // Assuming API service is here, like in PostCard.jsx
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react";
+import API from "../service/api"; // Assuming API service is here, like in PostCard.jsx
+import { useNavigate } from "react-router-dom";
 
 export default function Videos({ currentUser, onNavigate }) {
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [allVideos, setAllVideos] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [allVideos, setAllVideos] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const categories = [
     { id: "all", label: "All Videos" },
     { id: "trending", label: "Trending" },
@@ -16,36 +16,35 @@ export default function Videos({ currentUser, onNavigate }) {
     { id: "gaming", label: "Gaming" },
     { id: "education", label: "Education" },
     { id: "comedy", label: "Comedy" },
-  ]
+  ];
   const navigate = useNavigate();
   // --- Data Fetching ---
   // --- Data Fetching (FIXED) ---
   useEffect(() => {
     const fetchVideos = async () => {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
       try {
         // This function now exists in your API service
-        const response = await API.getVideos()
+        const response = await API.getVideos();
 
         if (!response?.isSuccess) {
-          throw new Error(response?.message || "Failed to fetch videos")
+          throw new Error(response?.message || "Failed to fetch videos");
         }
 
         // --- THE KEY FIX ---
         // The posts array is inside response.data.posts,
         // not response.posts
-        setAllVideos(response.data.posts || [])
-
+        setAllVideos(response.data.posts || []);
       } catch (err) {
-        console.error("Error fetching videos:", err)
-        setError(err.message)
+        console.error("Error fetching videos:", err);
+        setError(err.message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-    fetchVideos()
-  }, []) // Empty dependency array means this runs once on mount
+    };
+    fetchVideos();
+  }, []); // Empty dependency array means this runs once on mount
 
   // --- Filtering Logic ---
   // FIXME: The API (GET /api/posts/videos) does not return a 'category' field for each post.
@@ -55,38 +54,48 @@ export default function Videos({ currentUser, onNavigate }) {
   //   selectedCategory === "all" ? allVideos : allVideos.filter((video) => video.category === selectedCategory)
 
   // Temporary solution:
-  const filteredVideos = allVideos
+  const filteredVideos = allVideos;
 
   // --- Hover Handlers ---
   const handleMouseOver = (e) => {
     // Find the video element within the card and play it
-    const video = e.currentTarget.querySelector("video")
+    const video = e.currentTarget.querySelector("video");
     if (video) {
-      video.play()
+      video.play();
     }
-  }
+  };
 
   const handleMouseOut = (e) => {
     // Find the video, pause it, and reset its time
-    const video = e.currentTarget.querySelector("video")
+    const video = e.currentTarget.querySelector("video");
     if (video) {
-      video.pause()
-      video.currentTime = 0
+      video.pause();
+      video.currentTime = 0;
     }
-  }
+  };
 
   // --- Render Logic ---
   const renderContent = () => {
     if (isLoading) {
-      return <div className="text-center text-muted-foreground mt-10">Loading videos...</div>
+      return (
+        <div className="text-center text-muted-foreground mt-10">
+          Loading videos...
+        </div>
+      );
     }
 
     if (error) {
-      return <div className="text-center text-destructive mt-10">Error: {error}</div>
+      return (
+        <div className="text-center text-destructive mt-10">Error: {error}</div>
+      );
     }
 
     if (filteredVideos.length === 0) {
-      return <div className="text-center text-muted-foreground mt-10">No videos found.</div>
+      return (
+        <div className="text-center text-muted-foreground mt-10">
+          No videos found.
+        </div>
+      );
     }
 
     return (
@@ -121,7 +130,9 @@ export default function Videos({ currentUser, onNavigate }) {
             </div>
 
             <div className="p-4">
-              <h3 className="font-semibold text-card-foreground mb-2 line-clamp-2">{video.content || "Video Title"}</h3>
+              <h3 className="font-semibold text-card-foreground mb-2 line-clamp-2">
+                {video.content || "No title"}
+              </h3>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>{video.display_name || video.username}</span>
                 <span>{video.likes_count} views</span>
@@ -130,8 +141,8 @@ export default function Videos({ currentUser, onNavigate }) {
           </div>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,10 +155,11 @@ export default function Videos({ currentUser, onNavigate }) {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`px-4 py-2 rounded-full whitespace-nowrap transition-all duration-200 ${selectedCategory === category.id
+                className={`px-4 py-2 rounded-full whitespace-nowrap transition-all duration-200 ${
+                  selectedCategory === category.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                  }`}
+                }`}
               >
                 {category.label}
               </button>
@@ -159,5 +171,5 @@ export default function Videos({ currentUser, onNavigate }) {
       {/* --- Video Grid --- */}
       <div className="p-6">{renderContent()}</div>
     </div>
-  )
+  );
 }
