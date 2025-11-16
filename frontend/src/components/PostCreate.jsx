@@ -12,6 +12,10 @@ export default function PostCreate() {
   const [mediaPreview, setMediaPreview] = useState(null)
   const [isPosting, setIsPosting] = useState(false)
 
+  // 👇 ADDED: emoji picker + location state
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
+
   const { addNotification } = useNotifications();
   const { authUser } = useAuthStore();
 
@@ -27,6 +31,54 @@ export default function PostCreate() {
     }
   }
 
+  // 👇 ADDED: handle emoji click
+  const handleAddEmoji = (emoji) => {
+    setContent((prev) => prev + emoji)
+    setShowEmojiPicker(false)
+  }
+
+  const handleAddLocation = () => {
+  if (!navigator.geolocation) {
+    addNotification?.({
+      type: "error",
+      title: "Location Error",
+      message: "Geolocation is not supported by your browser."
+    });
+    return;
+  }
+
+  setIsGettingLocation(true);
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+
+      // NEW: get location name from geocoding API
+      const placeName = await reverseGeocode(latitude, longitude);
+
+      if (placeName) {
+        const locationText = `📍 ${placeName}`;
+        setContent((prev) => (prev ? prev + "\n" + locationText : locationText));
+      } else {
+        // fallback to coordinates
+        const locationText = `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        setContent((prev) => (prev ? prev + "\n" + locationText : locationText));
+      }
+
+      setIsGettingLocation(false);
+    },
+    (error) => {
+      addNotification?.({
+        type: "error",
+        title: "Location Error",
+        message: error?.message || "Unable to fetch your location."
+      });
+      setIsGettingLocation(false);
+    }
+  );
+};
+
+  
   const handlePost = async (e) => {
     e.preventDefault()
     if (!content.trim() && !mediaFile) return
@@ -82,6 +134,24 @@ export default function PostCreate() {
     setMediaFile(null)
     setMediaPreview(null)
   }
+
+  const reverseGeocode = async (lat, lng) => {
+  try {
+    const res = await fetch(
+      `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=e9ff163643b44c78932108699598026b`
+    );
+
+    const data = await res.json();
+    if (data?.results?.length > 0) {
+      return data.results[0].formatted; // readable location name
+    } else {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+};
+
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -157,18 +227,48 @@ export default function PostCreate() {
                   <input type="file" accept="image/*,video/*" onChange={handleMediaChange} className="hidden" />
                   <span className="text-xl">📷</span>
                 </label>
-                <button type="button" className="text-muted-foreground hover:text-card-foreground transition-colors">
+
+                {/* 👇 Emoji button now works */}
+                <button
+                  type="button"
+                  className="relative text-muted-foreground hover:text-card-foreground transition-colors"
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                >
                   <span className="text-xl">😊</span>
                 </button>
-                <button type="button" className="text-muted-foreground hover:text-card-foreground transition-colors">
-                  <span className="text-xl">📍</span>
+
+                {/* 👇 Location button now works */}
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-card-foreground transition-colors disabled:opacity-50"
+                  onClick={handleAddLocation}
+                  disabled={isGettingLocation}
+                >
+                  <span className="text-xl">
+                    {isGettingLocation ? "⏳" : "📍"}
+                  </span>
                 </button>
               </div>
               <div className="text-sm text-muted-foreground">{content.length}/280</div>
             </div>
+
+            {/* 👇 Simple Emoji Picker (no external lib) */}
+            {showEmojiPicker && (
+              <div className="mt-2 p-2 border border-border rounded-lg bg-background flex flex-wrap gap-2">
+                {["😀","😅","😂","😍","😎","🤔","😭","🙏","🔥","🎉","❤️","👍"].map((emo) => (
+                  <button
+                    key={emo}
+                    type="button"
+                    className="text-2xl hover:scale-110 transition-transform"
+                    onClick={() => handleAddEmoji(emo)}
+                  >
+                    {emo}
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
         </div>
-
 
       </div>
     </div>

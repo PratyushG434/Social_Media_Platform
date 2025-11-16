@@ -33,6 +33,7 @@ export default function StoryViewer() {
             allUsersStories.push({
               userId,
               user: {
+               
                 username: first.username,
                 displayName: first.display_name || first.username,
                 profilePic: first.profile_pic_url,
@@ -219,7 +220,9 @@ export default function StoryViewer() {
             className="w-8 h-8 rounded-full object-cover"
           />
           <div>
-            <p className="text-white font-semibold text-sm">{currentUserStories.user.displayName}</p>
+            <button className="text-white font-semibold text-sm"
+             onClick={() => navigate(`/dashboard/profile/${currentUserStories.userId}`)}
+             >{currentUserStories.user.displayName}</button>
             <p className="text-white/70 text-xs">{currentStory.timestamp}</p>
           </div>
         </div>
