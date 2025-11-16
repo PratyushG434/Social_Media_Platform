@@ -16,7 +16,7 @@ router.post('/:storyId/reactions', protect, storyController.addStoryReaction);
 // public routes
 router.get('/user/:userId', storyController.getUserStories);
 router.get('/:storyId/reactions', storyController.getStoryReactions);
-router.get('/:storyId/likes', storyController.getStoryLikes);
+router.get('/:storyId/getLikes', storyController.getStoryLikes);
 
 
 module.exports = router;
