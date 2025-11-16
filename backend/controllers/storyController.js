@@ -151,3 +151,23 @@ exports.getStoryReactions = async (req, res) => {
         res.status(500).json({ message: 'Server error fetching story reactions.' });
     }
 };
+
+exports.getStoryLikes = async (req, res) => { // <-- NEW FUNCTION
+    const { storyId } = req.params; // Get story ID from URL parameters
+
+    try {
+        const likers = await storyService.getStoryLikes(parseInt(storyId));
+
+        res.status(200).json({
+            message: 'Story likes fetched successfully!',
+            likes: likers
+        });
+
+    } catch (error) {
+        console.error('Error fetching story likes:', error);
+        if (error.message === 'Story not found or expired.') {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Server error fetching story likes.' });
+    }
+};

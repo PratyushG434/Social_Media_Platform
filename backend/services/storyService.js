@@ -131,10 +131,7 @@ exports.addOrUpdateStoryReaction = async (storyId, userId, reaction) => {
 
 
 exports.getStoryReactions = async (storyId) => {
-    if (!(await storyExistsAndIsActive(storyId))) {
-        throw new Error('Story not found or expired.');
-    }
-
+     
     const result = await db.query(
         `SELECT
             r.reaction_id,
@@ -150,5 +147,26 @@ exports.getStoryReactions = async (storyId) => {
          ORDER BY r.timestamp ASC;`,
         [storyId]
     );
+    return result.rows;
+};
+
+
+exports.getStoryLikes = async (storyId) => { // <-- NEW FUNCTION
+     
+    const result = await db.query(
+        `SELECT
+            sl.like_id,
+            sl.timestamp,
+            sl.user_id,
+            u.username,
+            u.display_name,
+            u.profile_pic_url,
+         FROM story_likes sl
+         JOIN users u ON sl.user_id = u.user_id 
+         WHERE sl.story_id = $1
+         ORDER BY sl.timestamp ASC;`,  
+        [storyId]
+    );
+
     return result.rows;
 };
