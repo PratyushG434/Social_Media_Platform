@@ -65,7 +65,7 @@ exports.loginUser = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,          // Prevents JS access (mitigates XSS)
             secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
-            sameSite: 'Strict',      // Helps prevent CSRF
+            sameSite: 'none',      // Helps prevent CSRF
             maxAge: 10 * 60 * 60 * 1000,  // 10 hour
         });
 
@@ -88,11 +88,12 @@ exports.loginUser = async (req, res) => {
 
 exports.logoutUser = (req, res) => {
     try {
-        res.cookie('token', '', {
+        res.cookie("token", token, {
             httpOnly: true,
-            expires: new Date(0), // Set expiration date to the past
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
+            secure: true,       // REQUIRED for cross-site cookies
+            sameSite: "none",   // REQUIRED when frontend & backend are different domains
+            maxAge: 10 * 60 * 60 * 1000,  // 10 hours (same as your token expiry)
+            path: "/",          // VERY IMPORTANT to ensure cookie is sent on all routes
         });
 
         res.status(200).json({ message: 'Logged out successfully.' });

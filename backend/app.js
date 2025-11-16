@@ -19,18 +19,35 @@ const PORT = process.env.PORT || 8000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://social-media-platform-ten-snowy.vercel.app",
     credentials: true,
   },
 });
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: "https://social-media-platform-ten-snowy.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization"
+  ],
 };
-app.use(cors(corsOptions));
+
+app.use(
+  cors(corsOptions)
+);
+
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://social-media-platform-ten-snowy.vercel.app");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Expose-Headers", "Set-Cookie");
+  next();
+});
 
 app.use(cookieParser());
 app.use(express.json());
