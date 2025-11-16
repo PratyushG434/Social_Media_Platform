@@ -1,3 +1,43 @@
+const db = require("../db/db");
+
+exports.getTaggedPostsByUser = async (userId) => {
+  const result = await db.query(
+    `SELECT
+      p.post_id,
+      p.content,
+      p.media_url,
+      p.content_type,
+      p.timestamp,
+      p.user_id,
+      u.username,
+      u.display_name,
+      u.profile_pic_url,
+      COUNT(DISTINCT l.like_id)::int AS likes_count,
+      COUNT(DISTINCT c.comment_id)::int AS comments_count
+    FROM post_tags pt
+    JOIN posts p ON pt.post_id = p.post_id
+    JOIN users u ON p.user_id = u.user_id
+    LEFT JOIN likes l ON p.post_id = l.post_id
+    LEFT JOIN comments c ON p.post_id = c.post_id
+    WHERE pt.user_id = $1
+    GROUP BY p.post_id, u.user_id
+    ORDER BY p.timestamp DESC;`,
+    [userId]
+  );
+  const posts = result.rows;
+  // For each post, fetch tags
+  for (const post of posts) {
+    const tagsResult = await db.query(
+      `SELECT u.user_id, u.username, u.display_name, u.profile_pic_url
+       FROM post_tags pt
+       JOIN users u ON pt.user_id = u.user_id
+       WHERE pt.post_id = $1;`,
+      [post.post_id]
+    );
+    post.tags = tagsResult.rows;
+  }
+  return posts;
+};
 // Add tags to post_tags table
 exports.addPostTags = async (postId, userIds) => {
   if (!Array.isArray(userIds) || userIds.length === 0) return;
@@ -9,7 +49,6 @@ exports.addPostTags = async (postId, userIds) => {
     params
   );
 };
-const db = require("../db/db");
 
 const userExists = async (userId) => {
   const result = await db.query("SELECT 1 FROM users WHERE user_id = $1;", [

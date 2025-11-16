@@ -2,6 +2,23 @@ const postService = require("../services/postService");
 const cloudinary = require("../db/cloudinary");
 const fs = require("fs");
 
+exports.getTaggedPostsByUser = async (req, res) => {
+  const userId = parseInt(req.params.userId, 10);
+  if (!userId) {
+    return res.status(400).json({ message: "Invalid user ID." });
+  }
+  try {
+    const posts = await postService.getTaggedPostsByUser(userId);
+    res.status(200).json({
+      message: "Tagged posts fetched successfully!",
+      posts,
+    });
+  } catch (error) {
+    console.error("Error fetching tagged posts:", error);
+    res.status(500).json({ message: "Server error fetching tagged posts." });
+  }
+};
+
 exports.createPost = async (req, res) => {
   const userId = req.user.user_id;
   const { content, content_type } = req.body;

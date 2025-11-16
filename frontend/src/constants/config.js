@@ -37,10 +37,16 @@ export const SERVICE_URLS = {
   createPost: { url: "/posts", method: "POST" },
   getHomeFeed: { url: "/posts/feed", method: "GET" }, // Following Feed
   getDiscoveryFeed: { url: "/posts", method: "GET" }, // Discovery/Explore Feed
+
+  getTaggedPosts: ({ userId }) => ({
+    url: `/posts/tagged/${userId}`,
+    method: "GET",
+  }),
+
   getLikedPosts: { url: "/posts/liked", method: "GET" },
-    getVideos:{
+  getVideos: {
     url: "/posts/videos",
-    method: "GET"
+    method: "GET",
   },
   getPostById: (postId) => ({
     url: `/posts/${postId}`,
@@ -65,7 +71,6 @@ export const SERVICE_URLS = {
     url: `/posts/${postId}`,
     method: "DELETE",
   }),
-  
 
   // USERS & PROFILE
   searchUsers: ({ searchQuery }) => ({
@@ -106,16 +111,14 @@ export const SERVICE_URLS = {
     method: "POST",
     data: { reaction },
   }),
-  
-  getStoryLikes:({ storyId }) => ({
+
+  getStoryLikes: ({ storyId }) => ({
     url: `stories/${storyId}/getLikes`,
     method: "GET",
-    
   }),
-  getStoryReactions:({ storyId }) => ({
+  getStoryReactions: ({ storyId }) => ({
     url: `stories/${storyId}/reactions`,
     method: "GET",
-    
   }),
 
   // CHAT/MESSAGES

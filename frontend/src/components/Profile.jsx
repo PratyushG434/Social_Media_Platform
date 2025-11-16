@@ -1,4 +1,4 @@
-"use client"
+("use client");
 
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,6 +26,40 @@ export default function Profile() {
   const navigate = useNavigate();
 
   const isOwnProfile = !paramId || (authUser && authUser.user_id === userId);
+
+  // Tagged posts state
+  const [taggedPosts, setTaggedPosts] = useState([]);
+  const [loadingTagged, setLoadingTagged] = useState(false);
+
+  // Fetch tagged posts when tab is active
+  useEffect(() => {
+    if (activeTab !== "tagged") return;
+    setLoadingTagged(true);
+    const targetId = isOwnProfile ? authUser?.user_id : userId;
+    if (!targetId) return;
+    API.getTaggedPosts({ userId: targetId })
+      .then((response) => {
+        if (response?.isSuccess) {
+          setTaggedPosts(response.data.posts || []);
+        } else {
+          setTaggedPosts([]);
+        }
+      })
+      .catch(() => setTaggedPosts([]))
+      .finally(() => setLoadingTagged(false));
+  }, [activeTab, isOwnProfile, authUser, userId]);
+  // --- Helper: Tagged List View ---
+  const TaggedListView = ({ posts }) => (
+    <div className="space-y-4">
+      {posts.length > 0 ? (
+        posts.map((post) => <PostCard key={post.post_id} post={post} />)
+      ) : (
+        <p className="text-center text-muted-foreground py-8 col-span-full">
+          No tagged posts yet.
+        </p>
+      )}
+    </div>
+  );
 
   // Follow state
   const [isFollowing, setIsFollowing] = useState(false);
@@ -178,7 +212,8 @@ export default function Profile() {
     // 2️⃣ API call
     try {
       const response = await API.toggleFollow({ userId: targetUserId });
-      if (!response?.isSuccess) throw new Error("Failed to toggle follow status");
+      if (!response?.isSuccess)
+        throw new Error("Failed to toggle follow status");
 
       // optional: server ka following flag mila to override
       if (response.data && typeof response.data.following === "boolean") {
@@ -303,7 +338,9 @@ export default function Profile() {
   if (!user) {
     return (
       <div className="max-w-2xl mx-auto p-4 text-center">
-        <h2 className="text-xl font-bold text-destructive">Profile Not Found</h2>
+        <h2 className="text-xl font-bold text-destructive">
+          Profile Not Found
+        </h2>
         <p className="text-muted-foreground">
           The profile you are looking for does not exist.
         </p>
@@ -320,7 +357,8 @@ export default function Profile() {
   // --- Helper component for the Grid View (with Video Fix) ---
   const GridView = ({ posts }) => (
     <div className="grid grid-cols-3 gap-1">
-      {posts.filter((p) => p.content_type !== "text" && p.media_url).length > 0 ? (
+      {posts.filter((p) => p.content_type !== "text" && p.media_url).length >
+      0 ? (
         posts
           .filter((p) => p.content_type !== "text" && p.media_url)
           .map((post) => (
@@ -571,9 +609,14 @@ export default function Profile() {
         )}
 
         {activeTab === "tagged" && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📷</div>
-            <p className="text-muted-foreground">No tagged posts yet</p>
+          <div className="flex flex-col">
+            {loadingTagged ? (
+              <p className="text-center text-muted-foreground py-8">
+                Loading tagged posts...
+              </p>
+            ) : (
+              <TaggedListView posts={taggedPosts} />
+            )}
           </div>
         )}
       </div>
