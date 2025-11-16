@@ -3,7 +3,7 @@ import { create } from "zustand";
 import API from "../service/api";
 import { io } from "socket.io-client";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "https://social-media-platform-vpii.onrender.com";
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
