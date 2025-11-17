@@ -20,7 +20,7 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("posts");
   const [viewMode, setViewMode] = useState("list"); // "list" | "grid"
 
-  const { authUser } = useAuthStore();
+  const { authUser , logout } = useAuthStore();
   const { setSelectedUser, setTargetUserForChat } = useChatStore();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
@@ -304,7 +304,16 @@ export default function Profile() {
     setTargetUserForChat(user.user_id);
     navigate("/dashboard/messages");
   };
-
+   const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed", err);
+      await logout();
+      navigate("/login");
+    }
+  };
   // --- Like Toggle per Post ---
   const handleLikeToggle = (postId) => {
     setUserPosts((prevPosts) =>
@@ -506,9 +515,10 @@ export default function Profile() {
                   >
                     Edit Profile
                   </button>
-                  {/* <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
-                    Share Profile
-                  </button> */}
+                  <button 
+                  onClick={handleLogout}  className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
+                    logout
+                  </button>
                 </>
               ) : (
                 <>

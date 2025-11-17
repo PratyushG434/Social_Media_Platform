@@ -65,6 +65,12 @@ export const SERVICE_URLS = {
     url: `posts/${postId}/comments`,
     method: "GET",
   }),
+   getPostLikers: ({ postId }) => ({
+    url: `posts/${postId}/likers`,
+    method: "GET",
+  }),
+  
+  
 
   deletePost: (postId) => ({
     url: `/posts/${postId}`,

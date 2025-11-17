@@ -6,7 +6,14 @@ import { useNavigate } from "react-router-dom";
 import API from "../service/api";
 import { useNotifications as useToast } from "./Notification-system";
 import Avatar from "./Avatar";
-import { formatDistanceToNow, isToday, isThisWeek, parseISO } from "date-fns";
+
+import {
+  formatDistanceToNow,
+  isToday,
+  isThisWeek,
+  parseISO,
+} from "date-fns";
+
 import { RefreshCw } from "lucide-react";
 
 function TaggedNotificationItem({ post, navigate }) {
@@ -22,7 +29,8 @@ function TaggedNotificationItem({ post, navigate }) {
       />
       <div className="flex-1">
         <p className="font-semibold text-card-foreground">
-          You have been tagged in a post by {post.display_name || post.username}
+          You have been tagged in a post by{" "}
+          {post.display_name || post.username}
         </p>
         <p className="text-muted-foreground text-sm">{post.content}</p>
         <p className="text-xs text-primary mt-1">
@@ -40,44 +48,33 @@ function TaggedNotificationItem({ post, navigate }) {
   );
 }
 
-// Groups notifications by date categories
 const groupNotificationsByDate = (notifications) => {
-  const groups = {
-    Today: [],
-    "This Week": [],
-    Earlier: [],
-  };
+  const groups = { Today: [], "This Week": [], Earlier: [] };
 
-  notifications.forEach((notification) => {
-    // Ensure the timestamp is a valid ISO string before parsing
-    if (!notification.timestamp || typeof notification.timestamp !== "string") {
-      groups.Earlier.push(notification);
+  notifications.forEach((n) => {
+    if (!n.timestamp || typeof n.timestamp !== "string") {
+      groups.Earlier.push(n);
       return;
     }
 
     try {
-      const date = parseISO(notification.timestamp);
-      if (isToday(date)) {
-        groups.Today.push(notification);
-      } else if (isThisWeek(date, { weekStartsOn: 1 })) {
-        groups["This Week"].push(notification);
-      } else {
-        groups.Earlier.push(notification);
-      }
-    } catch (e) {
-      groups.Earlier.push(notification);
+      const date = parseISO(n.timestamp);
+      if (isToday(date)) groups.Today.push(n);
+      else if (isThisWeek(date, { weekStartsOn: 1 }))
+        groups["This Week"].push(n);
+      else groups.Earlier.push(n);
+    } catch {
+      groups.Earlier.push(n);
     }
   });
 
-  if (groups.Today && groups.Today.length === 0) delete groups.Today;
-  if (groups["This Week"] && groups["This Week"].length === 0)
-    delete groups["This Week"];
-  if (groups.Earlier && groups.Earlier.length === 0) delete groups.Earlier;
+  if (groups.Today.length === 0) delete groups.Today;
+  if (groups["This Week"].length === 0) delete groups["This Week"];
+  if (groups.Earlier.length === 0) delete groups.Earlier;
 
   return groups;
 };
 
-// Skeleton Loader for a single notification item
 const NotificationSkeleton = () => (
   <div className="flex items-start space-x-4 p-4 animate-pulse">
     <div className="w-11 h-11 bg-muted rounded-full"></div>
@@ -89,50 +86,99 @@ const NotificationSkeleton = () => (
   </div>
 );
 
-// --- Notification Item Sub-Component ---
 function NotificationItem({
   notification,
   navigate,
   setNotifications,
   addNotification,
 }) {
+  const { authUser } = useAuthStore();
+
+  const [isFollowing, setIsFollowing] = useState(
+    typeof notification.isFollowing === "boolean"
+      ? notification.isFollowing
+      : false
+  );
+
+  const [loadingFollow, setLoadingFollow] = useState(false);
+
   const handleItemClick = () => {
-    // Mark as read locally (optimistic update)
     setNotifications((prev) =>
       prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
     );
 
-    // Navigate
-    if (notification.type === "follow" && notification.user.id) {
+    if (notification.type === "follow") {
       navigate(`/dashboard/profile/${notification.user.id}`);
     } else if (notification.postId) {
       navigate(`/post/${notification.postId}`);
     }
   };
 
-  const handleFollowBack = async (e) => {
+  const handleFollowToggle = async (e) => {
     e.stopPropagation();
-    try {
-      const response = await API.toggleFollow({ userId: notification.user.id });
-      const { following } = response.data;
 
-      if (following) {
-        addNotification({
-          type: "success",
-          title: "Followed Back!",
-          message: `You are now following ${notification.user.displayName}.`,
-        });
-      }
-      // You might want to update the local list state to remove the "Follow" button
-      // This is complex, so for simplicity, we just rely on the toast notification here.
+    if (!authUser) {
+      return addNotification({
+        type: "warning",
+        title: "Login Required",
+        message: "Please login to follow users.",
+      });
+    }
+
+    const prev = isFollowing;
+    const targetId = notification.user.id;
+
+    // Optimistic UI
+    setIsFollowing(!prev);
+
+    setNotifications((prevList) =>
+      prevList.map((n) =>
+        n.id === notification.id ? { ...n, isFollowing: !prev } : n
+      )
+    );
+
+    try {
+      setLoadingFollow(true);
+      const res = await API.toggleFollow({ userId: targetId });
+
+      const backendFollow =
+        typeof res.data.following === "boolean"
+          ? res.data.following
+          : !prev;
+
+      setIsFollowing(backendFollow);
+
+      setNotifications((prevList) =>
+        prevList.map((n) =>
+          n.id === notification.id
+            ? { ...n, isFollowing: backendFollow }
+            : n
+        )
+      );
     } catch (err) {
+      setIsFollowing(prev);
+
+      setNotifications((prevList) =>
+        prevList.map((n) =>
+          n.id === notification.id ? { ...n, isFollowing: prev } : n
+        )
+      );
+
       addNotification({
         type: "error",
         title: "Follow Failed",
-        message: "Could not follow back the user.",
+        message: "Could not update follow status.",
       });
+    } finally {
+      setLoadingFollow(false);
     }
   };
+
+  const followLabel = isFollowing ? "Unfollow" : "Follow Back";
+
+  const followClass = isFollowing
+    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+    : "bg-primary text-primary-foreground hover:bg-primary/90";
 
   const getIcon = (type) => {
     switch (type) {
@@ -147,7 +193,6 @@ function NotificationItem({
     }
   };
 
-  // Ensure timestamp is valid before calculating distance
   const timeDisplay = notification.timestamp
     ? formatDistanceToNow(parseISO(notification.timestamp), { addSuffix: true })
     : "N/A";
@@ -161,7 +206,6 @@ function NotificationItem({
           : "hover:bg-muted"
       }`}
     >
-      {/* Avatar with Icon */}
       <div className="relative flex-shrink-0">
         <Avatar
           src={notification.user.profilePic}
@@ -173,30 +217,31 @@ function NotificationItem({
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <p className="text-card-foreground">
           <span className="font-semibold">{notification.user.displayName}</span>
-          <span className="text-muted-foreground"> {notification.content}</span>
+          <span className="text-muted-foreground">
+            {" "}
+            {notification.content}
+          </span>
         </p>
         <p className="text-sm text-primary font-medium mt-1">{timeDisplay}</p>
       </div>
 
-      {/* Action/Preview */}
       <div className="flex-shrink-0 self-center">
         {notification.postPreview ? (
           <img
             src={notification.postPreview}
-            alt="Post preview"
+            alt="Preview"
             className="w-14 h-14 rounded-md object-cover"
           />
-        ) : notification.type === "follow" ? (
-          // We assume the notification only appears if the user is NOT already following back
+        ) : notification.type === "follow" && !isFollowing ? (
           <button
-            onClick={handleFollowBack}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all"
+            onClick={handleFollowToggle}
+            disabled={loadingFollow}
+            className={`${followClass} px-4 py-2 rounded-lg text-sm font-medium transition-all`}
           >
-            Follow Back
+            {loadingFollow ? "..." : followLabel}
           </button>
         ) : (
           !notification.isRead && (
@@ -208,49 +253,32 @@ function NotificationItem({
   );
 }
 
-// --- Main Notifications Component ---
-
 export default function Notifications() {
   const { authUser } = useAuthStore();
+  const { addNotification } = useToast();
+
   const [activeTab, setActiveTab] = useState("all");
   const [allNotifications, setAllNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [taggedPosts, setTaggedPosts] = useState([]);
   const [loadingTagged, setLoadingTagged] = useState(false);
-  // Fetch tagged posts for tagged tab
-  useEffect(() => {
-    if (activeTab !== "tagged" || !authUser?.user_id) return;
-    setLoadingTagged(true);
-    API.getTaggedPosts({ userId: authUser.user_id })
-      .then((response) => {
-        if (response?.isSuccess) {
-          setTaggedPosts(response.data.posts || []);
-        } else {
-          setTaggedPosts([]);
-        }
-      })
-      .catch(() => setTaggedPosts([]))
-      .finally(() => setLoadingTagged(false));
-  }, [activeTab, authUser]);
 
-  const { addNotification } = useToast();
   const navigate = useNavigate();
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await API.getNotifications();
-      if (!response?.isSuccess)
-        throw new Error("Failed to load notifications.");
+      const res = await API.getNotifications();
 
-      const processed = response.data.notifications.map((n) => ({
+      const processed = res.data.notifications.map((n) => ({
         id: n.notification_id,
         type: n.type,
         user: {
           id: n.sender_id,
           username: n.sender_username,
           displayName:
-            n.sender_display_name || n.sender_username || "Unknown User",
+            n.sender_display_name || n.sender_username || "User",
           profilePic: n.sender_profile_pic_url,
         },
         content: n.content,
@@ -259,14 +287,16 @@ export default function Notifications() {
         isRead: n.is_read,
         postId: n.post_id,
         storyId: n.story_id,
+        isFollowing: n.is_following_back || false, // 👈 Added
       }));
+
       setAllNotifications(processed);
     } catch (err) {
-      console.error("Error fetching notifications:", err);
+      console.error(err);
       addNotification({
         type: "error",
-        title: "Loading Error",
-        message: "Failed to fetch notifications.",
+        title: "Error",
+        message: "Failed to load notifications.",
       });
     } finally {
       setLoading(false);
@@ -277,16 +307,24 @@ export default function Notifications() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  useEffect(() => {
+    if (activeTab !== "tagged" || !authUser) return;
+
+    setLoadingTagged(true);
+    API.getTaggedPosts({ userId: authUser.user_id })
+      .then((res) => {
+        if (res?.isSuccess) setTaggedPosts(res.data.posts);
+      })
+      .finally(() => setLoadingTagged(false));
+  }, [activeTab, authUser]);
+
   const markAllAsRead = async () => {
     try {
       await API.markNotificationsRead();
-      setAllNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      addNotification({
-        type: "success",
-        title: "Success",
-        message: "All notifications marked as read.",
-      });
-    } catch (err) {
+      setAllNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true }))
+      );
+    } catch {
       addNotification({
         type: "error",
         title: "Error",
@@ -295,9 +333,9 @@ export default function Notifications() {
     }
   };
 
-  // --- Filter Logic ---
   const getFilteredNotifications = () => {
     if (activeTab === "all") return allNotifications;
+
     return allNotifications.filter((n) => {
       if (activeTab === "likes") return n.type === "like";
       if (activeTab === "comments")
@@ -307,8 +345,9 @@ export default function Notifications() {
     });
   };
 
-  const filteredNotifications = getFilteredNotifications();
-  const groupedNotifications = groupNotificationsByDate(filteredNotifications);
+  const filtered = getFilteredNotifications();
+  const grouped = groupNotificationsByDate(filtered);
+
   const unreadCount = allNotifications.filter((n) => !n.isRead).length;
 
   return (
@@ -319,27 +358,27 @@ export default function Notifications() {
           <h1 className="text-2xl font-bold text-card-foreground">
             Notifications
           </h1>
+
           <div className="flex items-center space-x-4">
             <button
               onClick={fetchNotifications}
-              className="p-2 rounded-full text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
-              title="Refresh notifications"
+              className="p-2 rounded-full hover:bg-muted"
             >
               <RefreshCw
                 className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
               />
             </button>
+
             <button
               onClick={markAllAsRead}
               disabled={unreadCount === 0}
-              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm text-primary font-medium disabled:opacity-50"
             >
               Mark all as read
             </button>
           </div>
         </div>
 
-        {/* --- TABS --- */}
         <div className="flex space-x-1 bg-muted p-1 rounded-xl">
           {[
             { id: "all", label: "All" },
@@ -347,23 +386,23 @@ export default function Notifications() {
             { id: "comments", label: "Comments" },
             { id: "follows", label: "Follows" },
             { id: "tagged", label: "Tagged" },
-          ].map((tab) => (
+          ].map((t) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                activeTab === tab.id
-                  ? "bg-card text-primary shadow-sm"
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold ${
+                activeTab === t.id
+                  ? "bg-card text-primary shadow"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab.label}
+              {t.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main content */}
       <div className="p-4">
         {activeTab === "tagged" ? (
           loadingTagged ? (
@@ -384,58 +423,42 @@ export default function Notifications() {
             </div>
           ) : (
             <div className="text-center py-20">
-              <div className="text-7xl mb-4">🏷️</div>
-              <h3 className="text-xl font-bold text-card-foreground mb-2">
-                No Tagged Posts
-              </h3>
+              <h3 className="text-xl font-bold">No Tagged Posts</h3>
               <p className="text-muted-foreground">
-                You haven't been tagged in any posts yet.
+                You haven't been tagged in any posts.
               </p>
             </div>
           )
         ) : loading ? (
-          // Skeleton Loading UI
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
               <NotificationSkeleton key={i} />
             ))}
           </div>
-        ) : Object.keys(groupedNotifications).length > 0 ? (
-          // Grouped Notification List
+        ) : Object.keys(grouped).length > 0 ? (
           <div className="space-y-6">
-            {Object.entries(groupedNotifications).map(
-              ([groupTitle, groupItems]) => (
-                <div key={groupTitle}>
-                  <h2 className="text-lg font-semibold text-card-foreground mb-3 px-2">
-                    {groupTitle}
-                  </h2>
-                  <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
-                    {groupItems.map((notification) => (
-                      <NotificationItem
-                        key={notification.id}
-                        notification={notification}
-                        navigate={navigate}
-                        setNotifications={setAllNotifications}
-                        addNotification={addNotification}
-                      />
-                    ))}
-                  </div>
+            {Object.entries(grouped).map(([date, items]) => (
+              <div key={date}>
+                <h2 className="text-lg font-semibold mb-3 px-2">{date}</h2>
+
+                <div className="bg-card border rounded-xl overflow-hidden">
+                  {items.map((n) => (
+                    <NotificationItem
+                      key={n.id}
+                      notification={n}
+                      navigate={navigate}
+                      setNotifications={setAllNotifications}
+                      addNotification={addNotification}
+                    />
+                  ))}
                 </div>
-              )
-            )}
+              </div>
+            ))}
           </div>
         ) : (
-          // Empty State
           <div className="text-center py-20">
-            <div className="text-7xl mb-4">🔕</div>
-            <h3 className="text-xl font-bold text-card-foreground mb-2">
-              No Notifications Here
-            </h3>
-            <p className="text-muted-foreground">
-              {activeTab === "all"
-                ? "You're all caught up!"
-                : `You have no new notifications for ${activeTab}.`}
-            </p>
+            <h3 className="text-xl font-bold">No Notifications</h3>
+            <p className="text-muted-foreground">You're all caught up!</p>
           </div>
         )}
       </div>
