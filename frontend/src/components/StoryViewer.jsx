@@ -53,6 +53,7 @@ export default function StoryViewer() {
                 id: s.story_id,
                 mediaUrl: s.media_url,
                 contentType: s.content_type,
+                content: s.content, // <-- map text content
                 timestamp: new Date(s.timestamp).toLocaleString(),
                 duration: 5000,
               })),
@@ -450,7 +451,7 @@ export default function StoryViewer() {
       {/* Story content: always show text, plus image/video if present */}
       <div className="relative w-full h-full flex flex-col items-center justify-center">
         {/* Text content (if any) */}
-        {currentStory.content && (
+        {currentStory.contentType === "text" && currentStory.content && (
           <div className="mb-4 px-6 py-4 text-white text-lg text-center break-words max-w-2xl bg-black/40 rounded-xl shadow-lg">
             {currentStory.content}
           </div>
