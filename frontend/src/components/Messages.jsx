@@ -231,23 +231,15 @@ export default function Messages() {
                             : "bg-card text-foreground rounded-bl-md border border-border"
                         }`}
                       >
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                        <p
-                          className={`text-xs mt-2 ${
-                            isOwnMessage(message.sender_id) ? "text-primary-foreground/70" : "text-muted-foreground"
-                          }`}
-                        >
-                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
                         {isOwnMessage(message.sender_id) && (
-                          // START: MODIFIED DELETE UI
-                          <div className="absolute top-0 right-0 z-10 -mr-2 -mt-2">
+                          // START: MODIFIED DELETE UI (Inside the bubble)
+                          <div className="absolute top-1 right-1 z-10">
                             <button
-                              className="p-1 rounded-full text-white bg-primary/80 hover:bg-primary transition-colors focus:outline-none"
+                              className="p-1 rounded-full text-primary-foreground/70 hover:text-primary-foreground transition-colors focus:outline-none"
                               title="Message options"
                               onClick={() => setOpenMessageMenuId(openMessageMenuId === message.message_id ? null : message.message_id)}
                             >
-                              <span className="text-sm leading-none">...</span>
+                              <span className="text-lg leading-none">...</span>
                             </button>
                             
                             {openMessageMenuId === message.message_id && (
@@ -261,8 +253,16 @@ export default function Messages() {
                               </div>
                             )}
                           </div>
-                          // END: MODIFIED DELETE UI
+                          // END: MODIFIED DELETE UI (Inside the bubble)
                         )}
+                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <p
+                          className={`text-xs mt-2 ${
+                            isOwnMessage(message.sender_id) ? "text-primary-foreground/70" : "text-muted-foreground"
+                          }`}
+                        >
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
                     </div>
                   </div>
