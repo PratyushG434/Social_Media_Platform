@@ -9,7 +9,7 @@ const API_URL = "https://social-media-platform-vpii.onrender.com/api";
 //ek comman api bana rahe hai
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 200000,
+  timeout: 20000,
   withCredentials: true,
   headers: {
     Accept: "application/json, multipart/form-data",
