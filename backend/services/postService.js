@@ -198,13 +198,10 @@ exports.getPostById = async (postId) => {
   return post;
 };
 
-exports.getPostsByUserId = async (userId) => {
+exports.getPostsByUserId = async (userId, currentUserId = null) => {
   if (!(await userExists(userId))) {
     throw new Error("User not found.");
   }
-
-  // Accept currentUserId as second argument for like status
-  const currentUserId = arguments[1];
 
   const result = await db.query(
     `SELECT
@@ -219,18 +216,22 @@ exports.getPostsByUserId = async (userId) => {
             u.profile_pic_url,
             COUNT(DISTINCT l.like_id)::int AS likes_count,
             COUNT(DISTINCT c.comment_id)::int AS comments_count,
-            CASE WHEN $2 IS NOT NULL THEN EXISTS (SELECT 1 FROM likes WHERE post_id = p.post_id AND user_id = $2) ELSE false END AS user_has_liked
-         FROM posts p
-         JOIN users u ON p.user_id = u.user_id
-         LEFT JOIN likes l ON p.post_id = l.post_id
-         LEFT JOIN comments c ON p.post_id = c.post_id
-         WHERE p.user_id = $1
-         GROUP BY p.post_id, u.user_id
-         ORDER BY p.timestamp DESC;`,
-    [userId, currentUserId || null]
+            CASE WHEN $2 IS NOT NULL
+                 THEN EXISTS (SELECT 1 FROM likes WHERE post_id = p.post_id AND user_id = $2)
+                 ELSE false
+            END AS user_has_liked
+     FROM posts p
+     JOIN users u ON p.user_id = u.user_id
+     LEFT JOIN likes l ON p.post_id = l.post_id
+     LEFT JOIN comments c ON p.post_id = c.post_id
+     WHERE p.user_id = $1
+     GROUP BY p.post_id, u.user_id
+     ORDER BY p.timestamp DESC;`,
+    [userId, currentUserId]
   );
+
   const posts = result.rows;
-  // For each post, fetch tags
+
   for (const post of posts) {
     const tagsResult = await db.query(
       `SELECT u.user_id, u.username, u.display_name, u.profile_pic_url
@@ -241,6 +242,7 @@ exports.getPostsByUserId = async (userId) => {
     );
     post.tags = tagsResult.rows;
   }
+
   return posts;
 };
 
