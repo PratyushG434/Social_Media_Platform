@@ -293,3 +293,24 @@ exports.getLikedPosts = async (req, res) => {
     res.status(500).json({ message: "Server error fetching liked posts." });
   }
 };
+
+
+
+exports.getPostLikers = async (req, res) => { // <-- NEW FUNCTION
+  const { postId } = req.params; // Get post ID from URL parameters
+
+  try {
+      const likers = await postService.getPostLikers(parseInt(postId)); // <-- Call likeService
+      res.status(200).json({
+          message: 'Post likers fetched successfully!',
+          likers: likers
+      });
+
+  } catch (error) {
+      console.error('Error fetching post likers:', error);
+      if (error.message === 'Post not found.') {
+          return res.status(404).json({ message: error.message });
+      }
+      res.status(500).json({ message: 'Server error fetching post likers.' });
+  }
+};

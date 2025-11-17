@@ -27,6 +27,8 @@ router.get("/:id/comments", commentController.getCommentsForPost);
 
 router.post("/:id/likes", protect, likeController.toggleLike);
 
+router.get('/:postId/likers', postController.getPostLikers);
+
 router.get(
   "/:id/likes",
   (req, res, next) => {

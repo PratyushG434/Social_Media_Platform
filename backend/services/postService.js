@@ -350,3 +350,27 @@ exports.getLikedPosts = async (currentUserId) => {
   );
   return result.rows;
 };
+
+
+exports.getPostLikers = async (postId) => { // <-- NEW FUNCTION
+   
+
+  // 2. Fetch likes for the given post_id, joining with users table to get liker's info
+  const result = await db.query(
+      `SELECT
+          l.like_id,
+          l.timestamp,
+          l.user_id,
+          u.username,
+          u.display_name,
+          u.profile_pic_url,
+          u.cloudinary_public_id AS liker_cloudinary_public_id -- Alias for clarity
+       FROM likes l
+       JOIN users u ON l.user_id = u.user_id -- Join with users table for liker details
+       WHERE l.post_id = $1
+       ORDER BY l.timestamp ASC;`,  
+      [postId]
+  );
+
+  return result.rows;
+};
