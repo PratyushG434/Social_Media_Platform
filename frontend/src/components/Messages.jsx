@@ -232,7 +232,7 @@ export default function Messages() {
                         }`}
                       >
                         {isOwnMessage(message.sender_id) && (
-                          // START: MODIFIED DELETE UI (Inside the bubble)
+                          // START: Message Menu Button
                           <div className="absolute top-1 right-1 z-10">
                             <button
                               className="p-1 rounded-full text-primary-foreground/70 hover:text-primary-foreground transition-colors focus:outline-none"
@@ -253,9 +253,11 @@ export default function Messages() {
                               </div>
                             )}
                           </div>
-                          // END: MODIFIED DELETE UI (Inside the bubble)
+                          // END: Message Menu Button
                         )}
-                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        {/* START: MODIFIED TEXT STYLING TO PREVENT OVERLAP */}
+                        <p className={`text-sm leading-relaxed ${isOwnMessage(message.sender_id) ? 'pr-4 pt-1' : ''}`}>{message.content}</p>
+                        {/* END: MODIFIED TEXT STYLING TO PREVENT OVERLAP */}
                         <p
                           className={`text-xs mt-2 ${
                             isOwnMessage(message.sender_id) ? "text-primary-foreground/70" : "text-muted-foreground"
