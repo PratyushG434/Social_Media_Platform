@@ -53,13 +53,16 @@ exports.getNotificationsByRecipientId = async (recipientId) => {
             u.username AS sender_username,
             u.display_name AS sender_display_name,
             u.profile_pic_url AS sender_profile_pic_url,
-            
-            -- FIX: Generate thumbnail for video posts using Cloudinary URL transformation
+            -- Generate thumbnail for video posts using Cloudinary URL transformation
             CASE
                 WHEN p.content_type = 'video' THEN REPLACE(p.media_url, '.mp4', '.jpg')
                 ELSE p.media_url
-            END AS post_media_url
-            
+            END AS post_media_url,
+            -- NEW: Is the recipient following the sender?
+            EXISTS (
+                SELECT 1 FROM follows f
+                WHERE f.follower_id = $1 AND f.following_id = n.sender_id
+            ) AS is_following_back
          FROM notifications n
          LEFT JOIN users u ON n.sender_id = u.user_id
          LEFT JOIN posts p ON n.post_id = p.post_id
