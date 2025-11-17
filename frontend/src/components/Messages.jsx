@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react" // IMPORTED useRef
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../store/useAuthStore"
 import { useChatStore } from "../store/useChatStore"
 import Avatar from "./Avatar"
-import { Loader } from "lucide-react"
+import { Loader, MoreVertical } from "lucide-react" 
 import { useNotifications } from "./Notification-system" 
 
 export default function Messages() {
@@ -34,6 +34,9 @@ export default function Messages() {
 
   // State to track which message's options menu is open
   const [openMessageMenuId, setOpenMessageMenuId] = useState(null); 
+  
+  // Ref to hold the element containing the menu button and dropdown
+  const menuRef = useRef(null); 
 
   // 1. Initial Load and Chat Initiation Logic (Runs once on component mount)
   useEffect(() => {
@@ -80,6 +83,23 @@ export default function Messages() {
     };
   }, [selectedChat, subscribeToChatEvents, unsubscribeFromChatEvents]);
 
+  // 3. Handle Click Outside Logic (NEW FEATURE)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If the menu is open AND the click occurred outside the menu element
+      if (openMessageMenuId !== null && menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpenMessageMenuId(null);
+      }
+    };
+
+    // Attach the event listener to the document body
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    // Clean up the event listener when the component unmounts
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMessageMenuId]); // Re-run only when the menu state changes
 
   const handleChatSelect = (chat) => {
     if (selectedChat?.chat_id === chat.chat_id) return;
@@ -230,6 +250,8 @@ export default function Messages() {
                             ? "bg-primary text-primary-foreground rounded-br-md"
                             : "bg-card text-foreground rounded-bl-md border border-border"
                         }`}
+                        // Attach the ref here so clicks on the bubble or content don't close the menu
+                        ref={isOwnMessage(message.sender_id) ? menuRef : null}
                       >
                         {isOwnMessage(message.sender_id) && (
                           // START: Message Menu Button
@@ -239,7 +261,7 @@ export default function Messages() {
                               title="Message options"
                               onClick={() => setOpenMessageMenuId(openMessageMenuId === message.message_id ? null : message.message_id)}
                             >
-                              <span className="text-lg leading-none">...</span>
+                              <MoreVertical className="size-4" /> 
                             </button>
                             
                             {openMessageMenuId === message.message_id && (
@@ -255,9 +277,7 @@ export default function Messages() {
                           </div>
                           // END: Message Menu Button
                         )}
-                        {/* START: MODIFIED TEXT STYLING TO PREVENT OVERLAP */}
                         <p className={`text-sm leading-relaxed ${isOwnMessage(message.sender_id) ? 'pr-4 pt-1' : ''}`}>{message.content}</p>
-                        {/* END: MODIFIED TEXT STYLING TO PREVENT OVERLAP */}
                         <p
                           className={`text-xs mt-2 ${
                             isOwnMessage(message.sender_id) ? "text-primary-foreground/70" : "text-muted-foreground"
