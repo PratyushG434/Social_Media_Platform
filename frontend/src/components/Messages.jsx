@@ -200,7 +200,7 @@ export default function Messages() {
               ) : (
                 messages.map((message) => (
                   <div key={message.message_id} className={`flex ${isOwnMessage(message.sender_id) ? "justify-end" : "justify-start"}`}>
-                    <div className="flex flex-col max-w-xs lg:max-w-md group">
+                    <div className="flex flex-col max-w-xs lg:max-w-md group relative">
                       <div
                         className={`px-4 py-3 rounded-2xl shadow-sm ${
                           isOwnMessage(message.sender_id)
@@ -216,6 +216,32 @@ export default function Messages() {
                         >
                           {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
+                        {isOwnMessage(message.sender_id) && (
+                          <button
+                            className="absolute top-2 right-2 z-10 bg-white border border-gray-300 rounded-full p-1 shadow hover:bg-red-100"
+                            title="Delete message"
+                            onClick={async () => {
+                              try {
+                                await useChatStore.getState().deleteMessage(message.message_id);
+                                addNotification({
+                                  type: "success",
+                                  title: "Message Deleted",
+                                  message: "Message deleted successfully.",
+                                  duration: 2000,
+                                });
+                              } catch (err) {
+                                addNotification({
+                                  type: "error",
+                                  title: "Delete Failed",
+                                  message: err.message || "Could not delete message.",
+                                  duration: 3000,
+                                });
+                              }
+                            }}
+                          >
+                            <span className="text-red-500 text-lg">×</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
