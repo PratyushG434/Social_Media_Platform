@@ -119,6 +119,10 @@ export const SERVICE_URLS = {
     url: `stories/${storyId}/reactions`,
     method: "GET",
   }),
+  deleteStory: (storyId) => ({
+    url: `/stories/${storyId}`,
+    method: "DELETE",
+  }),
 
   // CHAT/MESSAGES
 

@@ -144,4 +144,13 @@ API.deleteChatMessage = (messageId) => {
   });
 };
 
+// Custom API method for deleting a story
+API.deleteStory = (storyId) => {
+  const config = SERVICE_URLS.deleteStory(storyId);
+  return axiosInstance({
+    method: config.method,
+    url: config.url,
+  });
+};
+
 export default API;

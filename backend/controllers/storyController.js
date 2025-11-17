@@ -1,5 +1,5 @@
-const cloudinary = require('../db/cloudinary');
-const storyService = require('../services/storyService'); // ensure imported
+const cloudinary = require("../db/cloudinary");
+const storyService = require("../services/storyService"); // ensure imported
 
 exports.addStory = async (req, res) => {
   const userId = req.user.user_id;
@@ -7,167 +7,215 @@ exports.addStory = async (req, res) => {
   const file = req.file;
 
   // Validate content_type
-  if (!content_type || !['text', 'image', 'video'].includes(content_type)) {
-    return res.status(400).json({ message: 'Invalid or missing content_type. Must be "text", "image", or "video".' });
+  if (!content_type || !["text", "image", "video"].includes(content_type)) {
+    return res
+      .status(400)
+      .json({
+        message:
+          'Invalid or missing content_type. Must be "text", "image", or "video".',
+      });
   }
 
   // Validation for text or media
-  if (content_type === 'text' && (!content || content.trim() === '')) {
-    return res.status(400).json({ message: 'Text stories require content.' });
+  if (content_type === "text" && (!content || content.trim() === "")) {
+    return res.status(400).json({ message: "Text stories require content." });
   }
 
-  if ((content_type === 'image' || content_type === 'video') && !file) {
-    return res.status(400).json({ message: 'Image/Video stories require a file upload.' });
+  if ((content_type === "image" || content_type === "video") && !file) {
+    return res
+      .status(400)
+      .json({ message: "Image/Video stories require a file upload." });
   }
 
   try {
-    let media_url = null, public_id = null;
+    let media_url = null,
+      public_id = null;
 
     // Upload media to Cloudinary if file exists
     if (file) {
       const uploadResult = await cloudinary.uploader.upload(file.path, {
-        folder: 'stories',
-        resource_type: content_type === 'video' ? 'video' : 'image',
+        folder: "stories",
+        resource_type: content_type === "video" ? "video" : "image",
       });
       media_url = uploadResult.secure_url;
       public_id = uploadResult.public_id;
     }
 
     // Save story entry
-    const newStory = await storyService.addStory(userId, content, media_url, content_type, public_id);
+    const newStory = await storyService.addStory(
+      userId,
+      content,
+      media_url,
+      content_type,
+      public_id
+    );
 
     res.status(201).json({
-      message: 'Story created successfully!',
+      message: "Story created successfully!",
       story: newStory,
     });
-
   } catch (error) {
-    console.error('Error adding story:', error);
-    res.status(500).json({ message: 'Server error adding story.' });
+    console.error("Error adding story:", error);
+    res.status(500).json({ message: "Server error adding story." });
   }
 };
 
-
-
-exports.getStoriesFeed = async (req, res) => {
-    const userId = req.user.user_id;
-
-    try {
-        const stories = await storyService.getStoriesFeed(userId);
-        res.status(200).json({
-            message: 'Stories feed fetched successfully!',
-            stories: stories
-        });
-
-    } catch (error) {
-        console.error('Error fetching stories feed:', error);
-        res.status(500).json({ message: 'Server error fetching stories feed.' });
+exports.deleteStory = async (req, res) => {
+  const userId = req.user.user_id;
+  const { storyId } = req.params;
+  try {
+    const story = await storyService.getStoryById(parseInt(storyId));
+    if (!story) {
+      return res.status(404).json({ message: "Story not found." });
     }
+    if (story.user_id !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this story." });
+    }
+    // Delete from Cloudinary if media exists
+    if (story.cloudinary_public_id) {
+      const type = story.content_type === "video" ? "video" : "image";
+      await cloudinary.uploader.destroy(story.cloudinary_public_id, {
+        resource_type: type,
+      });
+    }
+    await storyService.deleteStory(parseInt(storyId));
+    res.status(200).json({ message: "Story deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting story:", error);
+    res.status(500).json({ message: "Server error deleting story." });
+  }
 };
 
+exports.getStoriesFeed = async (req, res) => {
+  const userId = req.user.user_id;
+
+  try {
+    const stories = await storyService.getStoriesFeed(userId);
+    res.status(200).json({
+      message: "Stories feed fetched successfully!",
+      stories: stories,
+    });
+  } catch (error) {
+    console.error("Error fetching stories feed:", error);
+    res.status(500).json({ message: "Server error fetching stories feed." });
+  }
+};
 
 exports.getUserStories = async (req, res) => {
-    const { userId } = req.params;
+  const { userId } = req.params;
 
-    try {
-        // Delegate to storyService to get user-specific stories
-        const stories = await storyService.getUserStories(parseInt(userId));
-        res.status(200).json({
-            message: `Stories for user ${userId} fetched successfully!`,
-            stories: stories
-        });
-
-    } catch (error) {
-        console.error(`Error fetching stories for user ${userId}:`, error);
-        if (error.message === 'User not found.') {
-            return res.status(404).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Server error fetching user stories.' });
+  try {
+    // Delegate to storyService to get user-specific stories
+    const stories = await storyService.getUserStories(parseInt(userId));
+    res.status(200).json({
+      message: `Stories for user ${userId} fetched successfully!`,
+      stories: stories,
+    });
+  } catch (error) {
+    console.error(`Error fetching stories for user ${userId}:`, error);
+    if (error.message === "User not found.") {
+      return res.status(404).json({ message: error.message });
     }
+    res.status(500).json({ message: "Server error fetching user stories." });
+  }
 };
 
 exports.toggleStoryLike = async (req, res) => {
-    const userId = req.user.user_id;
-    const { storyId } = req.params;
+  const userId = req.user.user_id;
+  const { storyId } = req.params;
 
-    try {
-        const liked = await storyService.toggleStoryLike(parseInt(storyId), parseInt(userId));
-        if (liked) {
-            res.status(201).json({ message: 'Story liked successfully!', liked: true });
-        } else {
-            res.status(200).json({ message: 'Story unliked successfully.', liked: false });
-        }
-    } catch (error) {
-        console.error('Error toggling story like:', error);
-        if (error.message === 'Story not found or expired.') {
-            return res.status(404).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Server error toggling story like.' });
+  try {
+    const liked = await storyService.toggleStoryLike(
+      parseInt(storyId),
+      parseInt(userId)
+    );
+    if (liked) {
+      res
+        .status(201)
+        .json({ message: "Story liked successfully!", liked: true });
+    } else {
+      res
+        .status(200)
+        .json({ message: "Story unliked successfully.", liked: false });
     }
+  } catch (error) {
+    console.error("Error toggling story like:", error);
+    if (error.message === "Story not found or expired.") {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Server error toggling story like." });
+  }
 };
 
-
 exports.addStoryReaction = async (req, res) => {
-    const userId = req.user.user_id;
-    const { storyId } = req.params;
-    const { reaction } = req.body;
+  const userId = req.user.user_id;
+  const { storyId } = req.params;
+  const { reaction } = req.body;
 
-    if (!reaction || reaction.trim() === '') {
-        return res.status(400).json({ message: 'Reaction content cannot be empty.' });
+  if (!reaction || reaction.trim() === "") {
+    return res
+      .status(400)
+      .json({ message: "Reaction content cannot be empty." });
+  }
+
+  try {
+    const reactionData = await storyService.addOrUpdateStoryReaction(
+      parseInt(storyId),
+      parseInt(userId),
+      reaction
+    );
+    // For simplicity, we'll just return 201 for both add/update now or refine service to return status
+    res.status(201).json({
+      message: "Story reaction processed successfully!",
+      reaction: reactionData,
+    });
+  } catch (error) {
+    console.error("Error adding/updating story reaction:", error);
+    if (error.message === "Story not found or expired.") {
+      return res.status(404).json({ message: error.message });
     }
-
-    try {
-        const reactionData = await storyService.addOrUpdateStoryReaction(parseInt(storyId), parseInt(userId), reaction);
-        // For simplicity, we'll just return 201 for both add/update now or refine service to return status
-        res.status(201).json({
-            message: 'Story reaction processed successfully!',
-            reaction: reactionData
-        });
-
-    } catch (error) {
-        console.error('Error adding/updating story reaction:', error);
-        if (error.message === 'Story not found or expired.') {
-            return res.status(404).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Server error adding/updating story reaction.' });
-    }
+    res
+      .status(500)
+      .json({ message: "Server error adding/updating story reaction." });
+  }
 };
 
 exports.getStoryReactions = async (req, res) => {
-    const { storyId } = req.params;
+  const { storyId } = req.params;
 
-    try {
-        const reactions = await storyService.getStoryReactions(parseInt(storyId));
-        res.status(200).json({
-            message: 'Story reactions fetched successfully!',
-            reactions: reactions
-        });
-
-    } catch (error) {
-        console.error('Error fetching story reactions:', error);
-        if (error.message === 'Story not found or expired.') {
-            return res.status(404).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Server error fetching story reactions.' });
+  try {
+    const reactions = await storyService.getStoryReactions(parseInt(storyId));
+    res.status(200).json({
+      message: "Story reactions fetched successfully!",
+      reactions: reactions,
+    });
+  } catch (error) {
+    console.error("Error fetching story reactions:", error);
+    if (error.message === "Story not found or expired.") {
+      return res.status(404).json({ message: error.message });
     }
+    res.status(500).json({ message: "Server error fetching story reactions." });
+  }
 };
 
-exports.getStoryLikes = async (req, res) => { // <-- NEW FUNCTION
-    const { storyId } = req.params; // Get story ID from URL parameters
+exports.getStoryLikes = async (req, res) => {
+  // <-- NEW FUNCTION
+  const { storyId } = req.params; // Get story ID from URL parameters
 
-    try {
-        const likers = await storyService.getStoryLikes(parseInt(storyId));
+  try {
+    const likers = await storyService.getStoryLikes(parseInt(storyId));
 
-        res.status(200).json({
-            message: 'Story likes fetched successfully!',
-            likes: likers
-        });
-
-    } catch (error) {
-        console.error('Error fetching story likes:', error);
-        if (error.message === 'Story not found or expired.') {
-            return res.status(404).json({ message: error.message });
-        }
-        res.status(500).json({ message: 'Server error fetching story likes.' });
+    res.status(200).json({
+      message: "Story likes fetched successfully!",
+      likes: likers,
+    });
+  } catch (error) {
+    console.error("Error fetching story likes:", error);
+    if (error.message === "Story not found or expired.") {
+      return res.status(404).json({ message: error.message });
     }
+    res.status(500).json({ message: "Server error fetching story likes." });
+  }
 };

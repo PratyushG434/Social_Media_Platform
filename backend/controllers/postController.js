@@ -79,8 +79,17 @@ exports.createPost = async (req, res) => {
     // Add tags to post_tags table
     if (tags.length > 0) {
       await postService.addPostTags(newPost.post_id, tags);
-      // Optionally, trigger notifications for tagged users here
-      // Example: notificationService.createNotification(taggedUserId, ...)
+      // Create notifications for each tagged user
+      const notificationService = require("../services/notificationService");
+      for (const taggedUserId of tags) {
+        await notificationService.createNotification(
+          taggedUserId, // recipientId
+          userId,       // senderId
+          "tag",        // type
+          "You have been tagged in a post.", // content
+          newPost.post_id // postId
+        );
+      }
     }
     res.status(201).json({
       message: "Post created successfully!",
