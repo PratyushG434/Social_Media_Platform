@@ -5,12 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import API from "../service/api";
 import { NotificationProvider, useNotifications } from "./Notification-system";
-import bellIcon from "../assets/icons/bell.png";
-import userIcon from "../assets/icons/user.png";
-import settingsIcon from "../assets/icons/setting.png";
-import bellIcon1 from "../assets/icons/bell1.png";
-import userIcon1 from "../assets/icons/user1.png";
-import settingsIcon1 from "../assets/icons/setting1.png";
 
 // 🔹 Helper functions for DOB format
 function formatDateForInput(isoDate) {
@@ -34,7 +28,6 @@ const SettingsContent = () => {
   const { authUser } = useAuthStore();
   const { addNotification } = useNotifications();
 
-  const [activeSection, setActiveSection] = useState("profile");
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -48,21 +41,6 @@ const SettingsContent = () => {
     phone: "",
     website: "",
     profile_pic_url: "",
-  });
-
-  const [accountSettings, setAccountSettings] = useState({
-    privateAccount: false,
-    allowMessages: true,
-    showOnlineStatus: true,
-    allowTagging: true,
-  });
-
-  const [notifications, setNotifications] = useState({
-    likes: true,
-    comments: true,
-    follows: true,
-    messages: true,
-    posts: false,
   });
 
   // Fetch user data on load
@@ -96,14 +74,6 @@ const SettingsContent = () => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAccountChange = (field, value) => {
-    setAccountSettings((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleNotificationChange = (field, value) => {
-    setNotifications((prev) => ({ ...prev, [field]: value }));
-  };
-
   // 🟡 Handle photo select
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -129,9 +99,9 @@ const SettingsContent = () => {
 
       const formData = new FormData();
       formData.append("display_name", profileData.display_name);
-      formData.append("username", profileData.username);
+      formData.append("username", profileData.username); // not editable, but still sent
       formData.append("bio", profileData.bio || "");
-      formData.append("email", profileData.email);
+      formData.append("email", profileData.email); // not editable, but still sent
       formData.append(
         "dob",
         profileData.dob ? formatDateToISO(profileData.dob) : ""
@@ -139,22 +109,6 @@ const SettingsContent = () => {
       formData.append("phone", profileData.phone || "");
       formData.append("website", profileData.website || "");
       if (selectedFile) formData.append("profile_pic", selectedFile);
-
-      // Validate DOB (must be at least 18)
-      if (profileData.dob) {
-        const birth = new Date(profileData.dob + "T00:00:00");
-        if (Number.isNaN(birth.getTime())) {
-          setError("Invalid date of birth.");
-          return;
-        }
-        const ageDifMs = Date.now() - birth.getTime();
-        const ageDate = new Date(ageDifMs);
-        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
-        if (age < 18) {
-          setError("You must be at least 18 years old.");
-          return;
-        }
-      }
 
       const userID = profileData.user_id;
 
@@ -185,56 +139,6 @@ const SettingsContent = () => {
     }
   };
 
-  const handleAccountSubmit = async () => {
-    try {
-      await API.updateAccountSettings(accountSettings);
-      addNotification({
-        type: "success",
-        title: "Account Updated",
-        message: "Account & privacy settings saved!",
-      });
-    } catch (err) {
-      addNotification({
-        type: "error",
-        title: "Failed to Save",
-        message: err.message,
-      });
-    }
-  };
-
-  const handleNotificationSubmit = async () => {
-    try {
-      await API.updateNotificationSettings(notifications);
-      addNotification({
-        type: "success",
-        title: "Notifications Updated",
-        message: "Notification preferences saved!",
-      });
-    } catch (err) {
-      addNotification({
-        type: "error",
-        title: "Failed to Save",
-        message: err.message,
-      });
-    }
-  };
-
-  const sections = [
-    { id: "profile", title: "Edit Profile", icon1: userIcon, icon2: userIcon1 },
-    {
-      id: "account",
-      title: "Account & Privacy",
-      icon1: settingsIcon,
-      icon2: settingsIcon1,
-    },
-    {
-      id: "notifications",
-      title: "Notifications",
-      icon1: bellIcon,
-      icon2: bellIcon1,
-    },
-  ];
-
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
@@ -253,210 +157,96 @@ const SettingsContent = () => {
         </div>
       </div>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-1/3 bg-card border-r border-border">
-          <div className="p-4 space-y-2">
-            {sections.map((section) => (
+      {/* Only Edit Profile Section */}
+      <div className="p-4 space-y-6">
+        <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
+
+        <div className="flex items-center space-x-4 mb-6">
+          <img
+            src={
+              profileData?.profile_pic_url ||
+              "/placeholder.svg?height=80&width=80&query=user+profile"
+            }
+            alt="Profile"
+            className="w-20 h-20 rounded-full object-cover"
+          />
+          <div>
+            <label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                id="photo-input"
+              />
               <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
-                  activeSection === section.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-card-foreground hover:bg-muted"
-                }`}
+                onClick={() =>
+                  document.getElementById("photo-input")?.click()
+                }
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                <img
-                  src={
-                    activeSection === section.id ? section.icon2 : section.icon1
-                  }
-                  alt={section.title}
-                  className="w-5 h-5 object-contain"
-                />
-                <span className="font-medium">{section.title}</span>
+                {uploading ? "Uploading..." : "Change Photo"}
               </button>
-            ))}
+            </label>
+            <p className="text-sm text-muted-foreground mt-1">
+              JPG, PNG or GIF. Max size 2MB
+            </p>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-4 space-y-6">
-          {/* 🟢 PROFILE */}
-          {activeSection === "profile" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
+        <div className="space-y-4">
+          <InputField
+            label="Display Name"
+            value={profileData.display_name || ""}
+            onChange={(e) =>
+              handleProfileChange("display_name", e.target.value)
+            }
+          />
 
-              <div className="flex items-center space-x-4 mb-6">
-                <img
-                  src={
-                    profileData?.profile_pic_url ||
-                    "/placeholder.svg?height=80&width=80&query=user+profile"
-                  }
-                  alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-                <div>
-                  <label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="photo-input"
-                    />
-                    <button
-                      onClick={() =>
-                        document.getElementById("photo-input")?.click()
-                      }
-                      className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-                    >
-                      {uploading ? "Uploading..." : "Change Photo"}
-                    </button>
-                  </label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    JPG, PNG or GIF. Max size 2MB
-                  </p>
-                </div>
-              </div>
+          {/* Username - visible but not editable */}
+          <InputField
+            label="Username"
+            value={profileData.username || ""}
+            disabled
+            onChange={() => {}}
+          />
 
-              <div className="space-y-4">
-                <InputField
-                  label="Display Name"
-                  value={profileData.display_name || ""}
-                  onChange={(e) =>
-                    handleProfileChange("display_name", e.target.value)
-                  }
-                />
-                <InputField
-                  label="Username"
-                  value={profileData.username || ""}
-                  onChange={(e) =>
-                    handleProfileChange("username", e.target.value)
-                  }
-                />
-                <InputField
-                  label="Date of Birth"
-                  type="date"
-                  value={profileData.dob || ""}
-                  onChange={(e) => handleProfileChange("dob", e.target.value)}
-                />
-                <TextareaField
-                  label="Bio"
-                  value={profileData.bio || ""}
-                  onChange={(e) => handleProfileChange("bio", e.target.value)}
-                />
-                <InputField
-                  label="Website"
-                  type="url"
-                  value={profileData.website || ""}
-                  onChange={(e) =>
-                    handleProfileChange("website", e.target.value)
-                  }
-                />
-              </div>
+          <InputField
+            label="Date of Birth"
+            type="date"
+            value={profileData.dob || ""}
+            onChange={(e) => handleProfileChange("dob", e.target.value)}
+          />
 
-              <button
-                onClick={handleProfileSubmit}
-                className="mt-6 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
-              >
-                {uploading ? "Saving..." : "Save Profile"}
-              </button>
-            </div>
-          )}
+          <TextareaField
+            label="Bio"
+            value={profileData.bio || ""}
+            onChange={(e) => handleProfileChange("bio", e.target.value)}
+          />
 
-          {/* 🔒 ACCOUNT */}
-          {activeSection === "account" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Account & Privacy</h2>
-
-              <div className="space-y-4">
-                <InputField
-                  label="Email"
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) => handleProfileChange("email", e.target.value)}
-                />
-                <InputField
-                  label="Phone Number"
-                  type="tel"
-                  value={profileData.phone}
-                  onChange={(e) => handleProfileChange("phone", e.target.value)}
-                />
-              </div>
-
-              <div className="mt-6 space-y-4">
-                {Object.entries(accountSettings).map(([key, value]) => (
-                  <ToggleSwitch
-                    key={key}
-                    title={key.replace(/([A-Z])/g, " $1").trim()}
-                    desc={
-                      {
-                        privateAccount:
-                          "Only approved followers can see your posts",
-                        allowMessages:
-                          "Allow others to send you direct messages",
-                        showOnlineStatus: "Show when you're active",
-                        allowTagging: "Allow others to tag you in posts",
-                      }[key]
-                    }
-                    value={value}
-                    onToggle={() => handleAccountChange(key, !value)}
-                  />
-                ))}
-              </div>
-
-              <button
-                onClick={handleAccountSubmit}
-                className="mt-6 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
-              >
-                Save Account & Privacy
-              </button>
-            </div>
-          )}
-
-          {/* 🔔 NOTIFICATIONS */}
-          {activeSection === "notifications" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Notification Settings</h2>
-              <div className="space-y-4">
-                {Object.entries(notifications).map(([key, value]) => (
-                  <ToggleSwitch
-                    key={key}
-                    title={`${key.charAt(0).toUpperCase() + key.slice(1)}`}
-                    desc={
-                      {
-                        likes: "Get notified when someone likes your posts",
-                        comments:
-                          "Get notified when someone comments on your posts",
-                        follows:
-                          "Get notified when someone follows your account",
-                        messages: "Get notified when you receive new messages",
-                        posts: "Get notified when people you follow post",
-                      }[key]
-                    }
-                    value={value}
-                    onToggle={() => handleNotificationChange(key, !value)}
-                  />
-                ))}
-              </div>
-
-              <button
-                onClick={handleNotificationSubmit}
-                className="mt-6 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
-              >
-                Save Notifications
-              </button>
-            </div>
-          )}
+          {/* Website field replaced by Email (non-editable) */}
+          <InputField
+            label="Email"
+            type="email"
+            value={profileData.email || ""}
+            disabled
+            onChange={() => {}}
+          />
         </div>
+
+        <button
+          onClick={handleProfileSubmit}
+          className="mt-6 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+        >
+          {uploading ? "Saving..." : "Save Profile"}
+        </button>
       </div>
     </div>
   );
 };
 
 // Small reusable UI Components
-function InputField({ label, type = "text", value, onChange }) {
+function InputField({ label, type = "text", value, onChange, disabled = false }) {
   return (
     <div>
       <label className="block text-sm font-medium text-card-foreground mb-2">
@@ -466,7 +256,8 @@ function InputField({ label, type = "text", value, onChange }) {
         type={type}
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        disabled={disabled}
+        className="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -484,29 +275,6 @@ function TextareaField({ label, value, onChange }) {
         rows={3}
         className="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
       />
-    </div>
-  );
-}
-
-function ToggleSwitch({ title, desc, value, onToggle }) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
-      <div>
-        <h3 className="font-medium text-card-foreground">{title}</h3>
-        <p className="text-sm text-muted-foreground">{desc}</p>
-      </div>
-      <button
-        onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          value ? "bg-primary" : "bg-muted"
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            value ? "translate-x-6" : "translate-x-1"
-          }`}
-        />
-      </button>
     </div>
   );
 }

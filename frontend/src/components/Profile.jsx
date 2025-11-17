@@ -506,9 +506,9 @@ export default function Profile() {
                   >
                     Edit Profile
                   </button>
-                  <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
+                  {/* <button className="bg-muted text-card-foreground py-2 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors">
                     Share Profile
-                  </button>
+                  </button> */}
                 </>
               ) : (
                 <>
