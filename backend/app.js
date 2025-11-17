@@ -44,7 +44,7 @@ app.use(
 
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://social-media-platform-ten-snowy.vercel.app");
+  res.header("Access-Control-Allow-Origin", "https://streamsocial.vercel.app");
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Expose-Headers", "Set-Cookie");
   next();
