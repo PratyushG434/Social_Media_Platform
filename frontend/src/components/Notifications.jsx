@@ -235,7 +235,7 @@ function NotificationItem({
             alt="Preview"
             className="w-14 h-14 rounded-md object-cover"
           />
-        ) : notification.type === "follow" ? (
+        ) : notification.type === "follow" && !isFollowing ? (
           <button
             onClick={handleFollowToggle}
             disabled={loadingFollow}
