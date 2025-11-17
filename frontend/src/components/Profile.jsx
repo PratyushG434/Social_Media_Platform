@@ -20,7 +20,7 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("posts");
   const [viewMode, setViewMode] = useState("list"); // "list" | "grid"
 
-  const { authUser } = useAuthStore();
+  const { authUser , logout } = useAuthStore();
   const { setSelectedUser, setTargetUserForChat } = useChatStore();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
