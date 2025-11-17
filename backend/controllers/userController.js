@@ -63,7 +63,9 @@ exports.getUserProfile = async (req, res) => {
     // Fetch all related data
     const followers = await getFollowers(id);
     const following = await getFollowing(id);
-    const posts = await getPostsByUserId(id);
+    // Pass currentUserId for like status
+    const currentUserId = req.user?.user_id;
+    const posts = await getPostsByUserId(id, currentUserId);
 
     // --- FIX 2: Standardize Response for /:userId ---
     // Combine all related data directly into the user object
@@ -198,11 +200,9 @@ exports.changeMyPassword = async (req, res) => {
       .json({ message: "Current password and new password are required." });
   }
   if (current_password === new_password) {
-    return res
-      .status(400)
-      .json({
-        message: "New password cannot be the same as the current password.",
-      });
+    return res.status(400).json({
+      message: "New password cannot be the same as the current password.",
+    });
   }
   if (new_password.length < 8) {
     return res

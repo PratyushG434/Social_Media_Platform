@@ -203,6 +203,9 @@ exports.getPostsByUserId = async (userId) => {
     throw new Error("User not found.");
   }
 
+  // Accept currentUserId as second argument for like status
+  const currentUserId = arguments[1];
+
   const result = await db.query(
     `SELECT
             p.post_id,
@@ -215,7 +218,8 @@ exports.getPostsByUserId = async (userId) => {
             u.display_name,
             u.profile_pic_url,
             COUNT(DISTINCT l.like_id)::int AS likes_count,
-            COUNT(DISTINCT c.comment_id)::int AS comments_count
+            COUNT(DISTINCT c.comment_id)::int AS comments_count,
+            CASE WHEN $2 IS NOT NULL THEN EXISTS (SELECT 1 FROM likes WHERE post_id = p.post_id AND user_id = $2) ELSE false END AS user_has_liked
          FROM posts p
          JOIN users u ON p.user_id = u.user_id
          LEFT JOIN likes l ON p.post_id = l.post_id
@@ -223,7 +227,7 @@ exports.getPostsByUserId = async (userId) => {
          WHERE p.user_id = $1
          GROUP BY p.post_id, u.user_id
          ORDER BY p.timestamp DESC;`,
-    [userId]
+    [userId, currentUserId || null]
   );
   const posts = result.rows;
   // For each post, fetch tags
@@ -351,13 +355,12 @@ exports.getLikedPosts = async (currentUserId) => {
   return result.rows;
 };
 
-
-exports.getPostLikers = async (postId) => { // <-- NEW FUNCTION
-   
+exports.getPostLikers = async (postId) => {
+  // <-- NEW FUNCTION
 
   // 2. Fetch likes for the given post_id, joining with users table to get liker's info
   const result = await db.query(
-      `SELECT
+    `SELECT
           l.like_id,
           l.timestamp,
           l.user_id,
@@ -368,8 +371,8 @@ exports.getPostLikers = async (postId) => { // <-- NEW FUNCTION
        FROM likes l
        JOIN users u ON l.user_id = u.user_id -- Join with users table for liker details
        WHERE l.post_id = $1
-       ORDER BY l.timestamp ASC;`,  
-      [postId]
+       ORDER BY l.timestamp ASC;`,
+    [postId]
   );
 
   return result.rows;
