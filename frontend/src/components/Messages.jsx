@@ -1,5 +1,3 @@
-// src/components/Messages.jsx
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -33,6 +31,9 @@ export default function Messages() {
   } = useChatStore();
 
   const [newMessageContent, setNewMessageContent] = useState("")
+
+  // State to track which message's options menu is open
+  const [openMessageMenuId, setOpenMessageMenuId] = useState(null); 
 
   // 1. Initial Load and Chat Initiation Logic (Runs once on component mount)
   useEffect(() => {
@@ -83,6 +84,7 @@ export default function Messages() {
   const handleChatSelect = (chat) => {
     if (selectedChat?.chat_id === chat.chat_id) return;
     selectChat(chat);
+    setOpenMessageMenuId(null); // Close any open menu when switching chats
   }
 
   const handleSendMessage = (e) => {
@@ -93,6 +95,27 @@ export default function Messages() {
       setNewMessageContent("");
     }
   }
+
+  // New function for message deletion
+  const handleDeleteMessage = async (messageId) => {
+    setOpenMessageMenuId(null); // Close the menu immediately
+    try {
+        await useChatStore.getState().deleteMessage(messageId);
+        addNotification({
+            type: "success",
+            title: "Message Deleted",
+            message: "Message deleted successfully.",
+            duration: 2000,
+        });
+    } catch (err) {
+        addNotification({
+            type: "error",
+            title: "Delete Failed",
+            message: err.message || "Could not delete message.",
+            duration: 3000,
+        });
+    }
+  };
   
   const isOwnMessage = (senderId) => senderId === authUser?.user_id; // Check authUser is safe
 
@@ -217,30 +240,28 @@ export default function Messages() {
                           {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                         {isOwnMessage(message.sender_id) && (
-                          <button
-                            className="absolute top-2 right-2 z-10 bg-white border border-gray-300 rounded-full p-1 shadow hover:bg-red-100"
-                            title="Delete message"
-                            onClick={async () => {
-                              try {
-                                await useChatStore.getState().deleteMessage(message.message_id);
-                                addNotification({
-                                  type: "success",
-                                  title: "Message Deleted",
-                                  message: "Message deleted successfully.",
-                                  duration: 2000,
-                                });
-                              } catch (err) {
-                                addNotification({
-                                  type: "error",
-                                  title: "Delete Failed",
-                                  message: err.message || "Could not delete message.",
-                                  duration: 3000,
-                                });
-                              }
-                            }}
-                          >
-                            <span className="text-red-500 text-lg">×</span>
-                          </button>
+                          // START: MODIFIED DELETE UI
+                          <div className="absolute top-0 right-0 z-10 -mr-2 -mt-2">
+                            <button
+                              className="p-1 rounded-full text-white bg-primary/80 hover:bg-primary transition-colors focus:outline-none"
+                              title="Message options"
+                              onClick={() => setOpenMessageMenuId(openMessageMenuId === message.message_id ? null : message.message_id)}
+                            >
+                              <span className="text-sm leading-none">...</span>
+                            </button>
+                            
+                            {openMessageMenuId === message.message_id && (
+                              <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                                <button
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                  onClick={() => handleDeleteMessage(message.message_id)}
+                                >
+                                  Delete Message
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          // END: MODIFIED DELETE UI
                         )}
                       </div>
                     </div>
