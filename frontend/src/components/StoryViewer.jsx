@@ -448,10 +448,10 @@ export default function StoryViewer() {
         </div>
       </div>
 
-      {/* Story content: always show text, plus image/video if present */}
+      {/* Story content: always show text if present, plus image/video if present */}
       <div className="relative w-full h-full flex flex-col items-center justify-center">
         {/* Text content (if any) */}
-        {currentStory.contentType === "text" && currentStory.content && (
+        {currentStory.content && (
           <div className="mb-4 px-6 py-4 text-white text-lg text-center break-words max-w-2xl bg-black/40 rounded-xl shadow-lg">
             {currentStory.content}
           </div>
