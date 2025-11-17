@@ -32,6 +32,11 @@ export default function PostCard({ post, onLikeToggle }) {
   // State for tagged users
   const [taggedUsers, setTaggedUsers] = useState(post.tags || []);
 
+  // NEW: likers popup state
+  const [showLikersPopup, setShowLikersPopup] = useState(false);
+  const [likers, setLikers] = useState([]);
+  const [loadingLikers, setLoadingLikers] = useState(false);
+
   useEffect(() => {
     if (post.tags && Array.isArray(post.tags)) {
       setTaggedUsers(post.tags);
@@ -55,6 +60,34 @@ export default function PostCard({ post, onLikeToggle }) {
   const handleToggleLike = () => {
     if (onLikeToggle) {
       onLikeToggle(post.post_id, isLiked);
+    }
+  };
+
+  // NEW: open/close likers popup and fetch likers
+  const handleToggleLikersPopup = async () => {
+    // if already open → close
+    if (showLikersPopup) {
+      setShowLikersPopup(false);
+      return;
+    }
+
+    setShowLikersPopup(true);
+    setLoadingLikers(true);
+    try {
+      const response = await API.getPostLikers({ postId: post.post_id });
+      // API spec: { message, likers: [...] }
+      const likersData = response?.likers || response?.data?.likers || [];
+      setLikers(Array.isArray(likersData) ? likersData : []);
+    } catch (err) {
+      console.error("Error fetching likers:", err);
+      addNotification?.({
+        type: "error",
+        title: "Failed to load likes",
+        message: err.message || "Could not fetch post likes.",
+      });
+      setLikers([]);
+    } finally {
+      setLoadingLikers(false);
     }
   };
 
@@ -83,8 +116,6 @@ export default function PostCard({ post, onLikeToggle }) {
       if (isDetailPage) {
         navigate("/dashboard", { replace: true });
       } else {
-        // Simple force reload or local state manipulation required here
-        // In a robust app, parent component (Feed) would handle post removal from its state.
         window.location.reload();
       }
     } catch (err) {
@@ -159,228 +190,300 @@ export default function PostCard({ post, onLikeToggle }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-primary/10 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-      {/* Post Header */}
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center space-x-3">
-          <div
-            className="relative cursor-pointer"
-            onClick={() => navigate(`/dashboard/profile/${post.user_id}`)}
-          >
-            <Avatar
-              src={post.profile_pic_url}
-              name={post.display_name || post.username}
-              className="w-11 h-11 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300"
-            />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
-          </div>
-          <div
-            className="cursor-pointer"
-            onClick={() => navigate(`/dashboard/profile/${post.user_id}`)}
-          >
-            <p className="font-bold text-gray-800 hover:text-primary transition-colors">
-              {post.display_name || post.username}
-            </p>
-            <p className="text-xs text-gray-500">
-              @{post.username} • {new Date(post.timestamp).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-        {/* --- NEW: Kebab Menu for Delete --- */}
-        {isPostOwner && (
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu((prev) => !prev)}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
+    <>
+      <div className="bg-white rounded-2xl border border-primary/10 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+        {/* Post Header */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-3">
+            <div
+              className="relative cursor-pointer"
+              onClick={() => navigate(`/dashboard/profile/${post.user_id}`)}
             >
-              <svg
-                className="w-5 h-5 text-gray-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm-2 4a2 2 0 104 0 2 2 0 00-4 0z" />
-              </svg>
-            </button>
-
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-border z-10">
-                <button
-                  onClick={handleDeletePost}
-                  className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-red-50 rounded-lg"
-                >
-                  Delete Post
-                </button>
-              </div>
-            )}
+              <Avatar
+                src={post.profile_pic_url}
+                name={post.display_name || post.username}
+                className="w-11 h-11 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300"
+              />
+              {/* <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div> */}
+            </div>
+            <div
+              className="cursor-pointer"
+              onClick={() => navigate(`/dashboard/profile/${post.user_id}`)}
+            >
+              <p className="font-bold text-gray-800 hover:text-primary transition-colors">
+                {post.display_name || post.username}
+              </p>
+              <p className="text-xs text-gray-500">
+                @{post.username} •{" "}
+                {new Date(post.timestamp).toLocaleDateString()}
+              </p>
+            </div>
           </div>
-        )}
-        {/* --- END NEW --- */}
-      </div>
-
-      {/* Post Content and Media (Clickable area to go to detail) */}
-      <div
-        onClick={handlePostContentClick}
-        className={isDetailPage ? "" : "cursor-pointer"}
-      >
-        {/* Post Content */}
-        <div className="px-4 pb-3">
-          <p className="text-gray-800 leading-relaxed">{post.content}</p>
-          {/* Tagged Users */}
-          {taggedUsers.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="text-xs text-muted-foreground">Tagged:</span>
-              {taggedUsers.map((user) => (
-                <span
-                  key={user.user_id}
-                  className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded text-xs"
+          {isPostOwner && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu((prev) => !prev)}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
-                  <Avatar
-                    src={user.profile_pic_url}
-                    name={user.display_name || user.username}
-                    className="w-5 h-5"
-                  />
-                  {user.display_name || user.username}
-                </span>
-              ))}
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm-2 4a2 2 0 104 0 2 2 0 00-4 0z" />
+                </svg>
+              </button>
+
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-border z-10">
+                  <button
+                    onClick={handleDeletePost}
+                    className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-red-50 rounded-lg"
+                  >
+                    Delete Post
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Post Media (Video/Image Check) */}
-        {post.media_url && (
-          <div className="relative group">
-            {post.content_type === "video" ? (
-              <video
-                src={post.media_url}
-                controls
-                loop
-                muted
-                className="w-full h-auto max-h-[600px] object-cover bg-black"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <img
-                src={post.media_url}
-                alt="Post content"
-                className="w-full h-auto max-h-[600px] object-cover"
-              />
+        {/* Post Content and Media (Clickable area to go to detail) */}
+        <div
+          onClick={handlePostContentClick}
+          className={isDetailPage ? "" : "cursor-pointer"}
+        >
+          {/* Post Content */}
+          <div className="px-4 pb-3">
+            <p className="text-gray-800 leading-relaxed">{post.content}</p>
+            {/* Tagged Users */}
+            {taggedUsers.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="text-xs text-muted-foreground">Tagged:</span>
+                {taggedUsers.map((user) => (
+                  <span
+                    key={user.user_id}
+                    className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded text-xs"
+                  >
+                    <Avatar
+                      src={user.profile_pic_url}
+                      name={user.display_name || user.username}
+                      className="w-5 h-5"
+                    />
+                    {user.display_name || user.username}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Actions (Likes, Comments) */}
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
-            {/* Like Button */}
-            <button
-              onClick={handleToggleLike}
-              className={`flex items-center gap-2 transition-all duration-300 group ${
-                isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
-              }`}
-            >
-              <svg
-                className={`w-6 h-6 transition-transform duration-300 ${
-                  isLiked ? "scale-110" : "group-hover:scale-110"
-                }`}
-                fill={isLiked ? "currentColor" : "none"}
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          {/* Post Media (Video/Image Check) */}
+          {post.media_url && (
+            <div className="relative group">
+              {post.content_type === "video" ? (
+                <video
+                  src={post.media_url}
+                  controls
+                  loop
+                  muted
+                  className="w-full h-auto max-h-[600px] object-cover bg-black"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <img
+                  src={post.media_url}
+                  alt="Post content"
+                  className="w-full h-auto max-h-[600px] object-cover"
                 />
-              </svg>
-              <span className="text-sm font-semibold">{likeCount}</span>
-            </button>
-            {/* Comments Button */}
-            <button
-              onClick={handleToggleComments}
-              className="flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-300 group"
-            >
-              <svg
-                className="w-6 h-6 group-hover:scale-110 transition-transform duration-300"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              <span className="text-sm font-semibold">
-                {post.comments_count || 0}
-              </span>
-            </button>
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Comments Section */}
-        {showComments && (
-          <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
-            {loadingComments ? (
-              <p className="text-gray-500 text-sm">Loading comments...</p>
-            ) : comments.length > 0 ? (
-              comments.map((c) => (
-                <div key={c.comment_id} className="flex gap-3 items-start">
-                  <Avatar
-                    src={c.profile_pic_url}
-                    name={c.display_name || c.username}
-                    className="w-8 h-8"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">
-                      {c.display_name || c.username}
-                    </p>
-                    <p className="text-gray-700 text-sm">{c.content}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(c.timestamp).toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-sm">
-                No comments yet. Be the first!
-              </p>
-            )}
-
-            {/* Add Comment Form */}
-            <form onSubmit={handleComment} className="flex gap-3">
-              <Avatar
-                src={authUser?.profile_pic_url}
-                name={authUser?.display_name || authUser?.username}
-                className="w-8 h-8 flex-shrink-0"
-              />
-              <div className="flex-1 flex gap-2">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment..."
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all duration-300"
-                />
+        {/* Actions (Likes, Comments) */}
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              {/* Like Button + Count */}
+              <div className="flex items-center gap-2">
+                {/* ❤️ Heart toggle */}
                 <button
-                  type="submit"
-                  disabled={!newComment.trim()}
-                  className="bg-gradient-to-r from-primary to-secondary text-white px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleToggleLike}
+                  className={`flex items-center justify-center transition-all duration-300 group ${
+                    isLiked
+                      ? "text-red-500"
+                      : "text-gray-600 hover:text-red-500"
+                  }`}
                 >
-                  Post
+                  <svg
+                    className={`w-6 h-6 transition-transform duration-300 ${
+                      isLiked ? "scale-110" : "group-hover:scale-110"
+                    }`}
+                    fill={isLiked ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                </button>
+
+                {/* 🔢 Like count → open likers popup */}
+                <button
+                  onClick={handleToggleLikersPopup}
+                  className="text-sm font-semibold text-gray-700 hover:underline"
+                >
+                  {likeCount}
                 </button>
               </div>
-            </form>
+
+              {/* Comments Button */}
+              <button
+                onClick={handleToggleComments}
+                className="flex items-center gap-2 text-gray-600 hover:text-primary transition-all duration-300 group"
+              >
+                <svg
+                  className="w-6 h-6 group-hover:scale-110 transition-transform duration-300"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <span className="text-sm font-semibold">
+                  {post.comments_count || 0}
+                </span>
+              </button>
+            </div>
           </div>
-        )}
+
+          {/* Comments Section */}
+          {showComments && (
+            <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
+              {loadingComments ? (
+                <p className="text-gray-500 text-sm">Loading comments...</p>
+              ) : comments.length > 0 ? (
+                comments.map((c) => (
+                  <div key={c.comment_id} className="flex gap-3 items-start">
+                    <Avatar
+                      src={c.profile_pic_url}
+                      name={c.display_name || c.username}
+                      className="w-8 h-8"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {c.display_name || c.username}
+                      </p>
+                      <p className="text-gray-700 text-sm">{c.content}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(c.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No comments yet. Be the first!
+                </p>
+              )}
+
+              {/* Add Comment Form */}
+              <form onSubmit={handleComment} className="flex gap-3">
+                <Avatar
+                  src={authUser?.profile_pic_url}
+                  name={authUser?.display_name || authUser?.username}
+                  className="w-8 h-8 flex-shrink-0"
+                />
+                <div className="flex-1 flex gap-2">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write a comment..."
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all duration-300"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newComment.trim()}
+                    className="bg-gradient-to-r from-primary to-secondary text-white px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Post
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* ⭐ Likers Popup Overlay */}
+      {showLikersPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowLikersPopup(false)}
+        >
+          <div
+            className="bg-white rounded-xl w-full max-w-sm max-h-[70vh] overflow-y-auto shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <h3 className="text-lg font-semibold">Likes</h3>
+              <button
+                onClick={() => setShowLikersPopup(false)}
+                className="text-gray-500 hover:text-gray-800"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              {loadingLikers ? (
+                <p className="text-sm text-gray-500">Loading likes...</p>
+              ) : likers.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No likes yet. Be the first to like!
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {likers.map((user) => (
+                    <li
+                      key={user.like_id}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-2 py-2 rounded-lg"
+                      onClick={() =>
+                        navigate(`/dashboard/profile/${user.user_id}`)
+                      }
+                    >
+                      <Avatar
+                        src={user.profile_pic_url}
+                        name={user.display_name || user.username}
+                        className="w-8 h-8"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {user.display_name || user.username}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          @{user.username}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
