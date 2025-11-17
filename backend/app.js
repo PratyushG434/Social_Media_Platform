@@ -20,13 +20,13 @@ const PORT = process.env.PORT || 8000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://social-media-platform-ten-snowy.vercel.app",
+    origin: "https://streamsocial.vercel.app",
     credentials: true,
   },
 });
 
 const corsOptions = {
-  origin: "https://social-media-platform-ten-snowy.vercel.app",
+  origin: "https://streamsocial.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
