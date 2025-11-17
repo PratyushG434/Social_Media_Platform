@@ -450,9 +450,9 @@ export default function StoryViewer() {
       {/* Story content: always show text, plus image/video if present */}
       <div className="relative w-full h-full flex flex-col items-center justify-center">
         {/* Text content (if any) */}
-        {currentStory.text && (
+        {currentStory.content && (
           <div className="mb-4 px-6 py-4 text-white text-lg text-center break-words max-w-2xl bg-black/40 rounded-xl shadow-lg">
-            {currentStory.text}
+            {currentStory.content}
           </div>
         )}
         {/* Video */}
