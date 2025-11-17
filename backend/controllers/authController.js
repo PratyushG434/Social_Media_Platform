@@ -7,11 +7,9 @@ exports.registerUser = async (req, res) => {
   const { username, email, password, display_name, dob } = req.body;
 
   if (!username || !email || !password) {
-    return res
-      .status(400)
-      .json({
-        message: "All required fields (username, email, password) are missing.",
-      });
+    return res.status(400).json({
+      message: "All required fields (username, email, password) are missing.",
+    });
   }
 
   if (dob && !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
@@ -112,17 +110,17 @@ exports.loginUser = async (req, res) => {
 
 exports.logoutUser = (req, res) => {
   try {
-    res.cookie("token", token, {
+    res.cookie("token", "", {
       httpOnly: true,
-      secure: true, // REQUIRED for cross-site cookies
-      sameSite: "none", // REQUIRED when frontend & backend are different domains
-      maxAge: 10 * 60 * 60 * 1000, // 10 hours (same as your token expiry)
-      path: "/", // VERY IMPORTANT to ensure cookie is sent on all routes
+      secure: true,
+      sameSite: "none",
+      expires: new Date(0), // Delete cookie immediately
+      path: "/",
     });
 
-    res.status(200).json({ message: "Logged out successfully." });
+    return res.status(200).json({ message: "Logged out successfully." });
   } catch (error) {
     console.error("Error during user logout:", error);
-    res.status(500).json({ message: "Server error during logout." });
+    return res.status(500).json({ message: "Server error during logout." });
   }
 };
