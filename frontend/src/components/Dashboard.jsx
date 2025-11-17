@@ -22,7 +22,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background flex">
       <SideNavigation />
 
-      <main className="flex-1 ml-64">
+      <main  className="flex-1 md:ml-64 pb-20 md:pb-0">
         {/* All routes are relative to /dashboard/* */}
         <Routes>
           <Route path="/" element={<Feed />} />
