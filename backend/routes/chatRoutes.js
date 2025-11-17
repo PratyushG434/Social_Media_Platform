@@ -1,5 +1,3 @@
-// backend/routes/chatRoutes.js
-
 const express = require("express");
 const router = express.Router();
 const chatController = require("../controllers/chatController");
@@ -18,5 +16,6 @@ router.get("/detail", protect, chatController.getChatDetails);
 
 // Route to get all messages for a specific chat
 router.get("/:chatId/messages", protect, chatController.getChatMessages);
+router.delete("/messages/:messageId", protect, chatController.deleteMessage);
 
 module.exports = router;

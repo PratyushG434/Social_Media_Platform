@@ -1,3 +1,25 @@
+// Service function to delete a message (only sender or chat participant can delete)
+exports.deleteMessage = async (messageId, userId) => {
+  // Check if user is sender or participant
+  const result = await db.query(
+    `SELECT m.message_id, m.sender_id, c.user1_id, c.user2_id
+     FROM messages m
+     JOIN chats c ON m.chat_id = c.chat_id
+     WHERE m.message_id = $1;`,
+    [messageId]
+  );
+  const msg = result.rows[0];
+  if (!msg) throw new Error("Message not found.");
+  if (
+    msg.sender_id !== userId &&
+    msg.user1_id !== userId &&
+    msg.user2_id !== userId
+  ) {
+    throw new Error("Not authorized to delete this message.");
+  }
+  await db.query(`DELETE FROM messages WHERE message_id = $1;`, [messageId]);
+  return { success: true };
+};
 // backend/services/messageService.js
 
 const db = require("../db/db");

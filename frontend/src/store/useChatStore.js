@@ -128,6 +128,22 @@ export const useChatStore = create((set, get) => ({
     );
   },
 
+  deleteMessage: async (messageId) => {
+    try {
+      const response = await API.deleteChatMessage(messageId);
+      if (!response.isSuccess)
+        throw new Error(response.msg || "Failed to delete message.");
+      set((state) => ({
+        messages: state.messages.filter(
+          (msg) => msg.message_id !== messageId && msg._id !== messageId
+        ),
+      }));
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      throw error;
+    }
+  },
+
   // 5. Subscribe to WebSocket events (joining room and listening for messages)
   subscribeToChatEvents: () => {
     const socket = useAuthStore.getState().socket;

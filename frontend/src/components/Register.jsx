@@ -3,10 +3,10 @@
 import { useState } from "react";
 import API from "../service/api";
 import { useNavigate } from "react-router-dom";
-import { useNotifications , NotificationProvider} from "./Notification-system";
+import { useNotifications, NotificationProvider } from "./Notification-system";
 import { useAuthStore } from "../store/useAuthStore";
 
-const  RegisterContent = () => {
+const RegisterContent = () => {
   const [formData, setFormData] = useState({
     email: "",
     displayName: "",
@@ -40,20 +40,36 @@ const  RegisterContent = () => {
       return;
     }
 
-    if (formData.password.length < 8) { // Updated to match backend requirement
+    if (formData.password.length < 8) {
+      // Updated to match backend requirement
       setError("Password must be at least 8 characters long.");
       return;
     }
-    
+    // Validate DOB (must be at least 18)
+    if (formData.dob) {
+      const birth = new Date(formData.dob + "T00:00:00");
+      if (Number.isNaN(birth.getTime())) {
+        setError("Invalid date of birth.");
+        return;
+      }
+      const ageDifMs = Date.now() - birth.getTime();
+      const ageDate = new Date(ageDifMs);
+      const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+      if (age < 18) {
+        setError("You must be at least 18 years old to register.");
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
       const response = await API.registerUser({
-        email : formData.email,
+        email: formData.email,
         username: formData.username,
-        password : formData.password,
-        dob : formData.dob,
-        display_name : formData.displayName
+        password: formData.password,
+        dob: formData.dob,
+        display_name: formData.displayName,
       });
       const user = response?.data?.user;
 
@@ -74,9 +90,9 @@ const  RegisterContent = () => {
       setTimeout(() => {
         navigate("/dashboard");
       }, 500);
-      
     } catch (err) {
-      const message = err.response?.data?.message || err.message || "Registration failed";
+      const message =
+        err.response?.data?.message || err.message || "Registration failed";
       setError(message);
       addNotification({
         type: "error",
@@ -84,7 +100,7 @@ const  RegisterContent = () => {
         message,
       });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -94,7 +110,9 @@ const  RegisterContent = () => {
         <div className="w-full max-w-md">
           <div className="bg-card rounded-lg shadow-lg p-8 text-center">
             <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-primary mb-2">Account Created!</h2>
+            <h2 className="text-2xl font-bold text-primary mb-2">
+              Account Created!
+            </h2>
             <p className="text-muted-foreground">Redirecting to Dashboard...</p>
           </div>
         </div>
@@ -107,13 +125,20 @@ const  RegisterContent = () => {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">Join SocialApp</h1>
-            <p className="text-muted-foreground">Create your account to get started</p>
+            <h1 className="text-3xl font-bold text-primary mb-2">
+              Join SocialApp
+            </h1>
+            <p className="text-muted-foreground">
+              Create your account to get started
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-card-foreground mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-card-foreground mb-2"
+              >
                 Email
               </label>
               <input
@@ -129,7 +154,10 @@ const  RegisterContent = () => {
             </div>
 
             <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-card-foreground mb-2">
+              <label
+                htmlFor="displayName"
+                className="block text-sm font-medium text-card-foreground mb-2"
+              >
                 Display Name
               </label>
               <input
@@ -145,7 +173,10 @@ const  RegisterContent = () => {
             </div>
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-card-foreground mb-2">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-card-foreground mb-2"
+              >
                 Username
               </label>
               <input
@@ -161,7 +192,10 @@ const  RegisterContent = () => {
             </div>
 
             <div>
-              <label htmlFor="dob" className="block text-sm font-medium text-card-foreground mb-2">
+              <label
+                htmlFor="dob"
+                className="block text-sm font-medium text-card-foreground mb-2"
+              >
                 Date of Birth
               </label>
               <input
@@ -176,7 +210,10 @@ const  RegisterContent = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-card-foreground mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-card-foreground mb-2"
+              >
                 Password
               </label>
               <input
@@ -192,7 +229,10 @@ const  RegisterContent = () => {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-card-foreground mb-2">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-card-foreground mb-2"
+              >
                 Confirm Password
               </label>
               <input
@@ -207,7 +247,11 @@ const  RegisterContent = () => {
               />
             </div>
 
-            {error && <div className="text-destructive text-sm text-center">{error}</div>}
+            {error && (
+              <div className="text-destructive text-sm text-center">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -221,7 +265,10 @@ const  RegisterContent = () => {
           <div className="mt-6 text-center">
             <div className="text-muted-foreground text-sm">
               Already have an account?{" "}
-              <button onClick={() => navigate("/login")} className="text-primary hover:underline">
+              <button
+                onClick={() => navigate("/login")}
+                className="text-primary hover:underline"
+              >
                 Log In
               </button>
             </div>
@@ -230,7 +277,7 @@ const  RegisterContent = () => {
       </div>
     </div>
   );
-}
+};
 
 export default function Register() {
   return (

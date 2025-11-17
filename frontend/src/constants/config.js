@@ -1,4 +1,3 @@
-// config.js
 export const API_NOTIFICATION_MESSAGES = {
   loading: {
     title: "Loading...",
@@ -140,6 +139,11 @@ export const SERVICE_URLS = {
   getChatMessages: (chatId) => ({
     url: `/chats/${chatId}/messages`,
     method: "GET",
+  }),
+
+  deleteChatMessage: (messageId) => ({
+    url: `/chats/messages/${messageId}`,
+    method: "DELETE",
   }),
 
   // NOTIFICATIONS (NEW)

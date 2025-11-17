@@ -1,13 +1,7 @@
-// backend/controllers/chatController.js
-
 const chatService = require("../services/chatService");
 const messageService = require("../services/messageService");
 const userService = require("../services/userService");
 
-/**
- * Initiates a new chat between the authenticated user and a target user,
- * or returns the existing chat if it already exists.
- */
 exports.createChat = async (req, res) => {
   const requesterId = req.user.user_id;
   const { targetUserId } = req.body;
@@ -54,10 +48,6 @@ exports.getUserChats = async (req, res) => {
   }
 };
 
-/**
- * Gets the details (partner user info) for a specific chat ID.
- * Uses query parameters to avoid path variable parsing bugs.
- */
 exports.getChatDetails = async (req, res) => {
   const currentUserId = req.user.user_id;
   const { chatId } = req.query; // Reads from query param
@@ -108,9 +98,6 @@ exports.getChatDetails = async (req, res) => {
   }
 };
 
-/**
- * Gets all messages for a specific chat.
- */
 exports.getChatMessages = async (req, res) => {
   const currentUserId = req.user.user_id;
   const { chatId } = req.params;
@@ -131,5 +118,26 @@ exports.getChatMessages = async (req, res) => {
       return res.status(403).json({ message: error.message });
     }
     res.status(500).json({ message: "Server error fetching chat messages." });
+  }
+};
+
+exports.deleteMessage = async (req, res) => {
+  const userId = req.user.user_id;
+  const { messageId } = req.params;
+  if (!messageId) {
+    return res.status(400).json({ message: "Message ID required." });
+  }
+  try {
+    await messageService.deleteMessage(parseInt(messageId), userId);
+    res.status(200).json({ message: "Message deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    if (error.message === "Message not found.") {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message === "Not authorized to delete this message.") {
+      return res.status(403).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Server error deleting message." });
   }
 };

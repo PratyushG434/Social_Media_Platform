@@ -200,16 +200,18 @@ const handleSendMessage = async (e) => {
           <div className="space-y-4">
             {messages.map((message) => {
               if (!message || !authUser) return null;
-              const isMe = message.senderId === authUser._id;
+              // Support both message_id and _id for compatibility
+              const msgId = message.message_id || message._id;
+              const isMe = message.senderId === authUser._id || message.sender_id === authUser.user_id;
+              const canDelete = isMe || (selectedUser && (selectedUser.user_id === authUser.user_id));
 
               return (
                 <div
                   ref={scrollRef}
-                  key={message._id}
+                  key={msgId}
                   className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                 >
-                  <div className="flex flex-col max-w-[70%]">
-
+                  <div className="flex flex-col max-w-[70%] relative">
                     {!isMe && (
                       <div className="chat-image avatar mb-1">
                         <div className="size-8 rounded-full border">
@@ -236,6 +238,33 @@ const handleSendMessage = async (e) => {
                       )}
                       {message.text && (
                         <p className="whitespace-pre-wrap">{message.text}</p>
+                      )}
+                      {canDelete && (
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          className="absolute top-1 right-1"
+                          onClick={async () => {
+                            try {
+                              await useChatStore.getState().deleteMessage(msgId);
+                              addNotification({
+                                type: "success",
+                                title: "Message Deleted",
+                                message: "Message deleted successfully.",
+                                duration: 2000,
+                              });
+                            } catch (err) {
+                              addNotification({
+                                type: "error",
+                                title: "Delete Failed",
+                                message: err.message || "Could not delete message.",
+                                duration: 3000,
+                              });
+                            }
+                          }}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
                       )}
                     </div>
 

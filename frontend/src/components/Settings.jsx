@@ -7,10 +7,10 @@ import API from "../service/api";
 import { NotificationProvider, useNotifications } from "./Notification-system";
 import bellIcon from "../assets/icons/bell.png";
 import userIcon from "../assets/icons/user.png";
-import settingsIcon from "../assets/icons/setting.png"
+import settingsIcon from "../assets/icons/setting.png";
 import bellIcon1 from "../assets/icons/bell1.png";
 import userIcon1 from "../assets/icons/user1.png";
-import settingsIcon1 from "../assets/icons/setting1.png"
+import settingsIcon1 from "../assets/icons/setting1.png";
 
 // 🔹 Helper functions for DOB format
 function formatDateForInput(isoDate) {
@@ -132,10 +132,29 @@ const SettingsContent = () => {
       formData.append("username", profileData.username);
       formData.append("bio", profileData.bio || "");
       formData.append("email", profileData.email);
-      formData.append("dob", profileData.dob ? formatDateToISO(profileData.dob) : "");
+      formData.append(
+        "dob",
+        profileData.dob ? formatDateToISO(profileData.dob) : ""
+      );
       formData.append("phone", profileData.phone || "");
       formData.append("website", profileData.website || "");
       if (selectedFile) formData.append("profile_pic", selectedFile);
+
+      // Validate DOB (must be at least 18)
+      if (profileData.dob) {
+        const birth = new Date(profileData.dob + "T00:00:00");
+        if (Number.isNaN(birth.getTime())) {
+          setError("Invalid date of birth.");
+          return;
+        }
+        const ageDifMs = Date.now() - birth.getTime();
+        const ageDate = new Date(ageDifMs);
+        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+        if (age < 18) {
+          setError("You must be at least 18 years old.");
+          return;
+        }
+      }
 
       const userID = profileData.user_id;
 
@@ -201,9 +220,19 @@ const SettingsContent = () => {
   };
 
   const sections = [
-    { id: "profile", title: "Edit Profile", icon1: userIcon , icon2 : userIcon1},
-    { id: "account", title: "Account & Privacy", icon1: settingsIcon , icon2 : settingsIcon1},
-    { id: "notifications", title: "Notifications", icon1: bellIcon, icon2 : bellIcon1 },
+    { id: "profile", title: "Edit Profile", icon1: userIcon, icon2: userIcon1 },
+    {
+      id: "account",
+      title: "Account & Privacy",
+      icon1: settingsIcon,
+      icon2: settingsIcon1,
+    },
+    {
+      id: "notifications",
+      title: "Notifications",
+      icon1: bellIcon,
+      icon2: bellIcon1,
+    },
   ];
 
   return (
@@ -217,7 +246,9 @@ const SettingsContent = () => {
           >
             <span className="text-xl">←</span>
           </button>
-          <h1 className="text-xl font-semibold text-card-foreground">Settings</h1>
+          <h1 className="text-xl font-semibold text-card-foreground">
+            Settings
+          </h1>
           <span />
         </div>
       </div>
@@ -230,13 +261,16 @@ const SettingsContent = () => {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${activeSection === section.id
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
+                  activeSection === section.id
                     ? "bg-primary text-primary-foreground"
                     : "text-card-foreground hover:bg-muted"
-                  }`}
+                }`}
               >
                 <img
-                  src={activeSection === section.id?section.icon2:section.icon1}
+                  src={
+                    activeSection === section.id ? section.icon2 : section.icon1
+                  }
                   alt={section.title}
                   className="w-5 h-5 object-contain"
                 />
@@ -305,9 +339,7 @@ const SettingsContent = () => {
                   label="Date of Birth"
                   type="date"
                   value={profileData.dob || ""}
-                  onChange={(e) =>
-                    handleProfileChange("dob", e.target.value)
-                  }
+                  onChange={(e) => handleProfileChange("dob", e.target.value)}
                 />
                 <TextareaField
                   label="Bio"
@@ -343,17 +375,13 @@ const SettingsContent = () => {
                   label="Email"
                   type="email"
                   value={profileData.email}
-                  onChange={(e) =>
-                    handleProfileChange("email", e.target.value)
-                  }
+                  onChange={(e) => handleProfileChange("email", e.target.value)}
                 />
                 <InputField
                   label="Phone Number"
                   type="tel"
                   value={profileData.phone}
-                  onChange={(e) =>
-                    handleProfileChange("phone", e.target.value)
-                  }
+                  onChange={(e) => handleProfileChange("phone", e.target.value)}
                 />
               </div>
 
@@ -390,9 +418,7 @@ const SettingsContent = () => {
           {/* 🔔 NOTIFICATIONS */}
           {activeSection === "notifications" && (
             <div>
-              <h2 className="text-2xl font-bold mb-4">
-                Notification Settings
-              </h2>
+              <h2 className="text-2xl font-bold mb-4">Notification Settings</h2>
               <div className="space-y-4">
                 {Object.entries(notifications).map(([key, value]) => (
                   <ToggleSwitch
@@ -405,16 +431,12 @@ const SettingsContent = () => {
                           "Get notified when someone comments on your posts",
                         follows:
                           "Get notified when someone follows your account",
-                        messages:
-                          "Get notified when you receive new messages",
-                        posts:
-                          "Get notified when people you follow post",
+                        messages: "Get notified when you receive new messages",
+                        posts: "Get notified when people you follow post",
                       }[key]
                     }
                     value={value}
-                    onToggle={() =>
-                      handleNotificationChange(key, !value)
-                    }
+                    onToggle={() => handleNotificationChange(key, !value)}
                   />
                 ))}
               </div>
@@ -475,12 +497,14 @@ function ToggleSwitch({ title, desc, value, onToggle }) {
       </div>
       <button
         onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? "bg-primary" : "bg-muted"
-          }`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          value ? "bg-primary" : "bg-muted"
+        }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? "translate-x-6" : "translate-x-1"
-            }`}
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            value ? "translate-x-6" : "translate-x-1"
+          }`}
         />
       </button>
     </div>
