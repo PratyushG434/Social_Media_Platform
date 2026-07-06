@@ -216,8 +216,8 @@ exports.getPostsByUserId = async (userId, currentUserId = null) => {
             u.profile_pic_url,
             COUNT(DISTINCT l.like_id)::int AS likes_count,
             COUNT(DISTINCT c.comment_id)::int AS comments_count,
-            CASE WHEN $2 IS NOT NULL
-                 THEN EXISTS (SELECT 1 FROM likes WHERE post_id = p.post_id AND user_id = $2)
+            CASE WHEN $2::int IS NOT NULL
+                 THEN EXISTS (SELECT 1 FROM likes WHERE post_id = p.post_id AND user_id = $2::int)
                  ELSE false
             END AS user_has_liked
      FROM posts p
