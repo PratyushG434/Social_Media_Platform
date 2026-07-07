@@ -17,16 +17,24 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 8000;
 
+// Add this
+const allowedOrigins = [
+  "https://streamsocial.vercel.app",
+  "https://social-media-platform-ten-snowy.vercel.app",
+];
+
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: "https://streamsocial.vercel.app",
+    origin: allowedOrigins,
     credentials: true,
   },
 });
 
+
 const corsOptions = {
-  origin: "https://streamsocial.vercel.app",
+  origin: allowedOrigins,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
@@ -44,7 +52,12 @@ app.use(
 
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://streamsocial.vercel.app");
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Expose-Headers", "Set-Cookie");
   next();
